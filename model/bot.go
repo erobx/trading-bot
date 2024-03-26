@@ -1,17 +1,23 @@
 package model
 
 import (
-	"context"
-	"fmt"
+	// "context"
 	"trading-bot/service"
 )
 
 type Bot struct {
-	Svc service.Service
+	svc           service.Service
+	marketChannel chan string
+}
+
+func NewBot(s service.Service, mc chan string) *Bot {
+	return &Bot{
+		svc: s,
+		marketChannel: mc,
+	}
 }
 
 func (bot *Bot) Start() {
-	fmt.Println("Initializing")
-	fmt.Println("Fetching skin prices")
-	bot.Svc.GetSkinPrice(context.TODO())
+	bot.svc.WatchMarketValues(bot.marketChannel)
+	// bot.svc.GetSkinPrice(context.TODO(), "1")
 }

@@ -4,12 +4,9 @@ import (
 	"context"
 )
 
+// Most popular AK-47, M4A1-S, AWP, USP-S and Glock descending
+
 type Service interface {
-	GetSkinPrice(ctx context.Context) error
-}
-
-type BotService struct{}
-
-func (bs *BotService) GetSkinPrice(ctx context.Context) error {
-	return nil
+	GetSkinPrice(ctx context.Context, id string) error
+	WatchMarketValues(chan string) error
 }
