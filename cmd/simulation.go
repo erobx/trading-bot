@@ -39,3 +39,53 @@ func monitorMarket(c chan<- string, num int) {
 		c <- moneyValue
 	}
 }
+
+func runSimulation() {
+	marketService := NewMarketService()
+	user := NewUser(marketService, 100)
+
+	simulation := NewSimulation(user)
+	simulation.start()
+
+	// go simulation.GenerateValues()
+	// go simulation.PrintFromChan()
+	// select {}
+}
+
+type Simulation struct {
+	simChan chan float32
+	user    *User
+}
+
+func NewSimulation(user *User) *Simulation {
+	return &Simulation{
+		simChan: make(chan float32),
+		user:    user,
+	}
+}
+
+func (s *Simulation) start() {
+	name := "Redline"
+	s.buyShares(name, 1)
+	s.user.printShares()
+}
+
+func (s *Simulation) buyShares(name string, amount int) {
+	for i := 0; i < amount; i++ {
+		if err := s.user.BuyShareOfSkin(name); err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (s *Simulation) GenerateValues() {
+	for {
+		s.simChan <- rand.Float32()
+	}
+}
+
+func (s *Simulation) PrintFromChan() {
+	for f := range s.simChan {
+		fmt.Println(f)
+	}
+}

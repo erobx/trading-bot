@@ -1,0 +1,9 @@
+Model a skin and its total value
+
+- Unlimted amount of shares
+- Could use a log() scale to determine value of share based on skin price
+
+Increase in skin price should reflect an increase in share value
+
+We have to be the market!! We buy back the shares
+
