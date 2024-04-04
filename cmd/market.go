@@ -1,7 +1,12 @@
 package main
 
+import (
+	"errors"
+)
+
 type Service interface {
 	FindSkin(name string) *Skin
+	ListSkin(name string, price float32) error
 }
 
 type MarketService struct {
@@ -15,7 +20,18 @@ func NewMarketService() Service {
 }
 
 func (ms *MarketService) FindSkin(name string) *Skin {
-	return ms.market.Skins[name]
+	skin := ms.market.Skins[name]
+	return skin
+}
+
+func (ms *MarketService) ListSkin(name string, price float32) error {
+	_, ok := ms.market.Skins[name]
+	if ok {
+		return errors.New("skin already exists")
+	}
+	skin := NewSkin(name, price)
+	ms.market.Skins[name] = skin
+	return nil
 }
 
 type Market struct {
@@ -35,4 +51,3 @@ func getSkins() map[string]*Skin {
 	skins["Redline"] = NewSkin("Redline", 10)
 	return skins
 }
-

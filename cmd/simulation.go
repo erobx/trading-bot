@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"trading-bot/model"
 	"trading-bot/service"
@@ -42,7 +43,8 @@ func monitorMarket(c chan<- string, num int) {
 
 func runSimulation() {
 	marketService := NewMarketService()
-	user := NewUser(marketService, 100)
+	logger := NewLogService(marketService)
+	user := NewUser(logger, 100)
 
 	simulation := NewSimulation(user)
 	simulation.start()
@@ -68,6 +70,15 @@ func (s *Simulation) start() {
 	name := "Redline"
 	s.buyShares(name, 1)
 	s.user.printShares()
+
+	err := s.user.ListSkin("Water Elemental", 32.45)
+	// Should recover from error TODO
+	if err != nil {
+		log.Println(err)
+	}
+
+	skin := s.user.FindSkin("Water Elemental")
+	fmt.Println("Name:", skin.Name)
 }
 
 func (s *Simulation) buyShares(name string, amount int) {

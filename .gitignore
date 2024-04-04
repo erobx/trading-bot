@@ -4,5 +4,6 @@
 # Environment
 .env
 
-# Data
+# Data/Logs
 *.json
+/logs
