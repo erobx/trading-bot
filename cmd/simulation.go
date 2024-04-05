@@ -71,7 +71,7 @@ func (s *Simulation) start() {
 	s.buyShares(name, 1)
 	s.user.printShares()
 
-	err := s.user.ListSkin("Water Elemental", 32.45)
+	err := s.user.ListSkin("Water Elemental", "Factory New", 32.45)
 	// Should recover from error TODO
 	if err != nil {
 		log.Println(err)

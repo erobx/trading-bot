@@ -2,14 +2,12 @@ package main
 
 import (
 	"errors"
-	"sync"
 )
 
 type User struct {
 	Balance float32
 	Shares  []*Share
 	svc     Service
-	mu      sync.RWMutex
 }
 
 func NewUser(svc Service, b float32) *User {
@@ -33,8 +31,8 @@ func (u *User) BuyShareOfSkin(name string) error {
 	return nil
 }
 
-func (u *User) ListSkin(name string, price float32) error {
-	return u.svc.ListSkin(name, price)
+func (u *User) ListSkin(name string, wear string, price float32) error {
+	return u.svc.ListSkin(name, wear, price)
 }
 
 func (u *User) printShares() {

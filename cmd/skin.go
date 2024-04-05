@@ -4,6 +4,7 @@ import "fmt"
 
 type Skin struct {
 	Name         string
+	Wear         string
 	CurrentPrice float32
 	ListedPrice  float32
 	Shares       []*Share
@@ -14,9 +15,10 @@ type Share struct {
 	ListedPrice  float32
 }
 
-func NewSkin(name string, intial float32) *Skin {
+func NewSkin(name string, wear string, intial float32) *Skin {
 	skin := &Skin{
 		Name:         name,
+		Wear:         wear,
 		CurrentPrice: intial,
 		ListedPrice:  intial,
 	}
