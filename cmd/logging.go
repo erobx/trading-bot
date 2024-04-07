@@ -62,7 +62,3 @@ func openLogFile(path string) *log.Logger {
 
 	return infoLog
 }
-
-func clearLog() {
-
-}

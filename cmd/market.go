@@ -1,66 +1,65 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"sync"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
-type Service interface {
-	GetSkin(name, wear string, price float32) (Skin, error)
-	AddSkin(name, wear string, price float32) error
-	RemoveSkin(name, wear string, price float32) error
-}
+// DB
+const file string = "skins.sqlite"
 
-type MarketService struct {
-	market *Market
-}
+const create string = `
+	CREATE TABLE IF NOT EXISTS skins (
+	id INTEGER NOT NULL PRIMARY KEY,
+	name TEXT,
+	wear TEXT,
+	price FLOAT
+	);
+`
 
-func NewMarketService() Service {
-	return &MarketService{
-		market: NewMarket(),
-	}
-}
-
-func (ms *MarketService) GetSkin(name, wear string, price float32) (Skin, error) {
-	skin, ok := ms.market.GetSkin(name, wear, price)
-	if !ok {
-		return Skin{}, fmt.Errorf("skin not found")
-	}
-	return skin, nil
-}
-
-func (ms *MarketService) AddSkin(name, wear string, price float32) error {
-	ms.market.AddSkin(NewSkin(name, wear, price))
-	return nil
-}
-
-func (ms *MarketService) RemoveSkin(name, wear string, price float32) error {
-	if !ms.market.RemoveSkin(name, wear, price) {
-		return fmt.Errorf("could not remove skin")
-	}
-	return nil
-}
-
+// MARKET
 type Market struct {
 	mu    sync.RWMutex
 	Skins map[string]map[Skin]int
+	db    *sql.DB
 }
 
-func NewMarket() *Market {
+func NewMarket() (*Market, error) {
+	db, err := sql.Open("sqlite3", file)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = db.Exec(create); err != nil {
+		return nil, err
+	}
+
 	return &Market{
 		Skins: make(map[string]map[Skin]int),
-	}
+		db:    db,
+	}, nil
 }
 
-func (m *Market) AddSkin(skin Skin) {
+func (m *Market) AddSkin(skin Skin) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// Map
 	key := m.generateKey(skin)
 	if m.Skins[key] == nil {
 		m.Skins[key] = make(map[Skin]int)
 	}
 	m.Skins[key][skin]++
+
+	// DB
+	q := "INSERT INTO SKINS (id, name, wear, price) VALUES(NULL,?,?,?);"
+	_, err := m.db.Exec(q, skin.Name, skin.Wear, skin.Price)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *Market) GetSkin(name, wear string, price float32) (Skin, bool) {
