@@ -2,8 +2,10 @@
 /bin
 
 # Environment
+*txt
 .env
 
 # Data/Logs
 *.json
 /logs
+*.sqlite
