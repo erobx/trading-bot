@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"trading-bot/model"
 	"trading-bot/service"
@@ -67,27 +66,23 @@ func NewSimulation(user *User) *Simulation {
 }
 
 func (s *Simulation) start() {
-	name := "Redline"
-	s.buyShares(name, 1)
-	s.user.printShares()
+	s.user.AddSkin("Redline", "Factory New", 30.21)
+	s.user.AddSkin("Redline", "Factory New", 30.21)
+	s.user.AddSkin("Redline", "Factory New", 10.99)
+	s.user.GetSkin("Redline", "Factory New", 30.21)
 
-	err := s.user.ListSkin("Water Elemental", "Factory New", 32.45)
-	// Should recover from error TODO
-	if err != nil {
-		log.Println(err)
-	}
-
-	skin := s.user.FindSkin("Water Elemental")
-	fmt.Println("Name:", skin.Name)
+	s.user.RemoveSkin("Redline", "Factory New", 30.21)
+	s.user.RemoveSkin("Redline", "Factory New", 30.21)
+	s.user.RemoveSkin("Redline", "Factory New", 30.21)
 }
 
-func (s *Simulation) buyShares(name string, amount int) {
-	for i := 0; i < amount; i++ {
-		if err := s.user.BuyShareOfSkin(name); err != nil {
-			fmt.Println(err)
-		}
-	}
-}
+// func (s *Simulation) buyShares(name string, amount int) {
+// 	for i := 0; i < amount; i++ {
+// 		if err := s.user.BuyShareOfSkin(name); err != nil {
+// 			fmt.Println(err)
+// 		}
+// 	}
+// }
 
 func (s *Simulation) GenerateValues() {
 	for {

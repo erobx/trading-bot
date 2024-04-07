@@ -1,42 +1,39 @@
 package main
 
-import (
-	"errors"
-)
-
 type User struct {
-	Balance float32
-	Shares  []*Share
-	svc     Service
+	Balance    float32
+	OwnedSkins map[string]map[string]*Skin
+	svc        Service
 }
 
 func NewUser(svc Service, b float32) *User {
 	return &User{
-		Balance: b,
-		svc:     svc,
+		Balance:    b,
+		OwnedSkins: make(map[string]map[string]*Skin),
+		svc:        svc,
 	}
 }
 
-func (u *User) FindSkin(name string) *Skin {
-	return u.svc.FindSkin(name)
+func (u *User) GetSkin(name, wear string, price float32) (Skin, error) {
+	return u.svc.GetSkin(name, wear, price)
 }
 
-func (u *User) BuyShareOfSkin(name string) error {
-	skin := u.svc.FindSkin(name)
-	if skin == nil {
-		return errors.New("could not find skin")
-	}
-	share := skin.buyShare()
-	u.Shares = append(u.Shares, share)
-	return nil
+func (u *User) BuyShareOfSkin(name, wear string, price float32) error {
+	_, err := u.svc.GetSkin(name, wear, price)
+	// skin.buyShare()
+	return err
 }
 
-func (u *User) ListSkin(name string, wear string, price float32) error {
-	return u.svc.ListSkin(name, wear, price)
+func (u *User) AddSkin(name, wear string, price float32) error {
+	return u.svc.AddSkin(name, wear, price)
 }
 
-func (u *User) printShares() {
-	for _, share := range u.Shares {
-		share.printInfo()
-	}
+func (u *User) RemoveSkin(name, wear string, price float32) error {
+	return u.svc.RemoveSkin(name, wear, price)
 }
+
+// func (u *User) displayPositions() {
+// 	for _, skin := range u.OwnedSkins {
+// 		fmt.Printf("Name %s\n", skin.Name)
+// 	}
+// }
