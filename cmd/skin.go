@@ -3,9 +3,9 @@ package main
 import "fmt"
 
 type Skin struct {
-	Name  string
-	Wear  string
-	Price float32
+	Name  string  `json:"Name"`
+	Wear  string  `json:"Wear"`
+	Price float32 `json:"Price"`
 	// Shares []*Share
 }
 

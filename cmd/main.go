@@ -10,17 +10,7 @@ func main() {
 	// Testing Steam Web API
 	// steamApi()
 
-	m, err := NewMarket()
-	if err != nil {
-		// Fail to connect to DB
-		panic(err)
-	}
-
-	svc := NewMarketService(m)
-	svc = NewLogService(svc)
-	user := NewUser(svc, 100.00)
-
-	app := NewApp(user)
+	app := NewApp()
 	app.start()
 }
 
