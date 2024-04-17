@@ -7,8 +7,8 @@ import (
 
 type Service interface {
 	GetSkin(context context.Context, name, wear string) (Skin, error)
-	AddSkin(context context.Context, name, wear string, price float32) error
-	RemoveSkin(context context.Context, name, wear string, price float32) error
+	AddSkin(context context.Context, name, wear string, price dbDecimal) error
+	RemoveSkin(context context.Context, name, wear string, price dbDecimal) error
 }
 
 type MarketService struct {
@@ -29,7 +29,7 @@ func (ms *MarketService) GetSkin(context context.Context, name, wear string) (Sk
 	return skin, nil
 }
 
-func (ms *MarketService) AddSkin(context context.Context, name, wear string, price float32) error {
+func (ms *MarketService) AddSkin(context context.Context, name, wear string, price dbDecimal) error {
 	err := ms.market.AddSkin(NewSkin(name, wear, price))
 	if err != nil {
 		fmt.Println(err)
@@ -38,7 +38,7 @@ func (ms *MarketService) AddSkin(context context.Context, name, wear string, pri
 	return nil
 }
 
-func (ms *MarketService) RemoveSkin(context context.Context, name, wear string, price float32) error {
+func (ms *MarketService) RemoveSkin(context context.Context, name, wear string, price dbDecimal) error {
 	if !ms.market.RemoveSkin(name, wear, price) {
 		return fmt.Errorf("could not remove skin")
 	}

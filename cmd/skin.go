@@ -1,25 +1,40 @@
 package main
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type Skin struct {
-	Name  string  `json:"Name"`
-	Wear  string  `json:"Wear"`
-	Price float32 `json:"Price"`
+	Name  string    `json:"Name"`
+	Wear  string    `json:"Wear"`
+	Price dbDecimal `json:"Price"`
 	// Shares []*Share
 }
 
 type Share struct {
-	CurrentPrice float32
-	ListedPrice  float32
+	CurrentPrice float64
+	ListedPrice  float64
 }
 
-func NewSkin(name, wear string, intial float32) Skin {
+func NewSkin(name, wear string, intial dbDecimal) Skin {
 	return Skin{
 		Name:  name,
 		Wear:  wear,
 		Price: intial,
 	}
+}
+
+func (s Skin) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name string
+		Wear string
+		Price string
+	}{
+		Name: s.Name,
+		Wear: s.Wear,
+		Price: s.Price.String(),
+	})
 }
 
 // func (s *Skin) buyShare() {
@@ -48,7 +63,7 @@ func NewSkin(name, wear string, intial float32) Skin {
 // 	}
 // }
 
-func NewShare(cp, lp float32) *Share {
+func NewShare(cp, lp float64) *Share {
 	return &Share{
 		CurrentPrice: cp,
 		ListedPrice:  lp,

@@ -35,7 +35,9 @@ func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
-	// err := h.svc.AddSkin(r.Context(), "Redline", "Factory New", 32)
+	// temp, _ := decimal.NewFromString("123.123")
+	// price := dbDecimal(temp)
+	// err := h.svc.AddSkin(r.Context(), "Redline", "Factory New", price)
 	// if err != nil {
 	// 	fmt.Println(err)
 	// }
@@ -57,7 +59,7 @@ func (h *DefaultHandler) addDummyData() {
 	wears := [5]string{"Factory New", "Minimal Wear", "Field-Tested", "Well-Worn", "Battle-Scarred"}
 	prices := randomPrices()
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 40; i++ {
 		nameIndex := rand.Intn(len(names))
 		wearIndex := rand.Intn(len(wears))
 		priceIndex := rand.Intn(len(prices))

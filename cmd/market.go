@@ -2,11 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/shopspring/decimal"
 )
 
 // DB
@@ -24,9 +27,40 @@ const createSkinTable string = `
 const createUserTable string = `
 	CREATE TABLE IF NOT EXISTS users (
     email TEXT,
-	passwordHash TEXT
+	passwordHash TEXT,
+	token TEXT,
+	balance FLOAT
 	);
 `
+
+// Price BS
+type dbDecimal decimal.Decimal
+
+func (v *dbDecimal) Scan(value interface{}) error {
+	if value == nil {
+		*v = dbDecimal(decimal.Zero)
+		return nil
+	}
+	if sv, err := driver.String.ConvertValue(value); err == nil {
+		if vv, ok := sv.(string); ok {
+			if vvv, err := decimal.NewFromString(vv); err == nil {
+				*v = dbDecimal(vvv)
+				return nil
+			}
+		}
+	}
+	return errors.New("cannot convert to decimal")
+}
+
+func (v dbDecimal) Value() (driver.Value, error) {
+	dec := decimal.Decimal(v)
+	price, _ := dec.Float64()
+	return price, nil
+}
+
+func (v dbDecimal) String() string {
+	return decimal.Decimal(v).String()
+}
 
 // MARKET
 type Market struct {
@@ -39,7 +73,7 @@ func NewMarket() (*Market, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.Exec("DROP TABLE skins;")
+	// db.Exec("DROP TABLE skins;")
 	if _, err = db.Exec(createSkinTable); err != nil {
 		return nil, err
 	}
@@ -73,9 +107,9 @@ func (m *Market) GetSkin(name, wear string) (Skin, bool) {
 	}
 	defer rows.Close()
 
-	var prices []float32
+	var prices []dbDecimal
 	for rows.Next() {
-		var i float32
+		var i dbDecimal
 		err = rows.Scan(&i)
 		if err != nil {
 			return skin, false
@@ -86,12 +120,12 @@ func (m *Market) GetSkin(name, wear string) (Skin, bool) {
 		return Skin{}, false
 	}
 
-	median:= getMedianPrice(prices)
+	median := getMedianPrice(prices)
 
 	return Skin{Name: name, Wear: wear, Price: median}, true
 }
 
-func (m *Market) RemoveSkin(name, wear string, price float32) bool {
+func (m *Market) RemoveSkin(name, wear string, price dbDecimal) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -102,17 +136,20 @@ func (m *Market) generateKey(skin Skin) string {
 	return fmt.Sprintf("%s_%s_%.2f", skin.Name, skin.Wear, skin.Price)
 }
 
-func getMedianPrice(prices []float32) float32  {
+func getMedianPrice(prices []dbDecimal) dbDecimal {
 	return prices[len(prices)/2]
 }
 
-func randomPrices() []float32 {
-	min := float32(23.10)
-	max := float32(42.69)
+func randomPrices() []dbDecimal {
+	min_d := float64(23.12)
+	max_d := float64(42.99)
 	size := 10
-	prices := make([]float32, size)
+	prices := make([]dbDecimal, size)
+
 	for i := range prices {
-		prices[i] = min + rand.Float32()*(max-min)
+		d := min_d + rand.Float64() * max_d
+		prices[i] = dbDecimal(decimal.NewFromFloat(d))
 	}
+
 	return prices
 }

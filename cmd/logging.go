@@ -22,25 +22,25 @@ func (ls *LogService) GetSkin(context context.Context, name, wear string) (Skin,
 	ls.logger.Printf("Searching for %s...\n", name)
 	skin, err := ls.svc.GetSkin(context, name, wear)
 	if err != nil {
-		ls.logger.Printf("Could not find: %s, %s\n", skin, wear)
+		ls.logger.Printf("Could not find: %s, %s\n", name, wear)
 	} else {
-		ls.logger.Printf("Found skin: %s, %s, $%.2f\n", name, wear, skin.Price)
+		ls.logger.Printf("Found skin: %s, %s, $%s\n", name, wear, skin.Price.String())
 	}
 	return skin, err
 }
 
-func (ls *LogService) AddSkin(context context.Context, name, wear string, price float32) error {
-	ls.logger.Printf("Attempting to add skin: %s, %s, $%.2f...\n", name, wear, price)
+func (ls *LogService) AddSkin(context context.Context, name, wear string, price dbDecimal) error {
+	ls.logger.Printf("Attempting to add skin: %s, %s, $%s...\n", name, wear, price.String())
 	skin := ls.svc.AddSkin(context, name, wear, price)
 	if skin != nil {
-		ls.logger.Printf("Could not list skin: %s, %s, $%.2f\n", name, wear, price)
+		ls.logger.Printf("Could not list skin: %s, %s, $%s\n", name, wear, price.String())
 		return skin
 	}
-	ls.logger.Printf("New skin on market: %s, %s, $%.2f\n", name, wear, price)
+	ls.logger.Printf("New skin on market: %s, %s, $%s\n", name, wear, price.String())
 	return skin
 }
 
-func (ls *LogService) RemoveSkin(context context.Context, name, wear string, price float32) error {
+func (ls *LogService) RemoveSkin(context context.Context, name, wear string, price dbDecimal) error {
 	ls.logger.Printf("Removing skin: %s, %s...\n", name, wear)
 	err := ls.svc.RemoveSkin(context, name, wear, price)
 	if err != nil {
