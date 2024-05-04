@@ -1,4 +1,4 @@
-module trading-bot
+module githbu.com/erobx/trading-bot
 
 go 1.22.0
 
