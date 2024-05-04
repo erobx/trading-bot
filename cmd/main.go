@@ -4,13 +4,14 @@ import (
 	"log"
 
 	"github.com/joho/godotenv"
+	"github.com/erobx/pkg/app"
 )
 
 func main() {
 	// Testing Steam Web API
 	// steamApi()
 
-	app := NewApp()
+	app := app.NewApp()
 	app.start()
 }
 
