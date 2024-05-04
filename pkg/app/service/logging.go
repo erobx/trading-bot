@@ -1,9 +1,12 @@
-package main
+package service
 
 import (
 	"context"
 	"log"
 	"os"
+
+	"github.com/erobx/trading-bot/pkg/app/model"
+	"github.com/erobx/trading-bot/pkg/types"
 )
 
 type LogService struct {
@@ -18,7 +21,7 @@ func NewLogService(svc Service) Service {
 	}
 }
 
-func (ls *LogService) GetSkin(context context.Context, name, wear string) (Skin, error) {
+func (ls *LogService) GetSkin(context context.Context, name, wear string) (model.Skin, error) {
 	ls.logger.Printf("Searching for %s...\n", name)
 	skin, err := ls.svc.GetSkin(context, name, wear)
 	if err != nil {
@@ -29,7 +32,7 @@ func (ls *LogService) GetSkin(context context.Context, name, wear string) (Skin,
 	return skin, err
 }
 
-func (ls *LogService) AddSkin(context context.Context, name, wear string, price dbDecimal) error {
+func (ls *LogService) AddSkin(context context.Context, name, wear string, price types.DbDecimal) error {
 	ls.logger.Printf("Attempting to add skin: %s, %s, $%s...\n", name, wear, price.String())
 	skin := ls.svc.AddSkin(context, name, wear, price)
 	if skin != nil {
@@ -40,7 +43,7 @@ func (ls *LogService) AddSkin(context context.Context, name, wear string, price 
 	return skin
 }
 
-func (ls *LogService) RemoveSkin(context context.Context, name, wear string, price dbDecimal) error {
+func (ls *LogService) RemoveSkin(context context.Context, name, wear string, price types.DbDecimal) error {
 	ls.logger.Printf("Removing skin: %s, %s...\n", name, wear)
 	err := ls.svc.RemoveSkin(context, name, wear, price)
 	if err != nil {

@@ -1,9 +1,13 @@
-package main
+package app
 
 import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/erobx/trading-bot/pkg/app/handler"
+	"github.com/erobx/trading-bot/pkg/app/service"
+	"github.com/erobx/trading-bot/pkg/db"
 )
 
 type App struct{}
@@ -12,17 +16,17 @@ func NewApp() *App {
 	return &App{}
 }
 
-func (s *App) start() {
-	m, err := NewMarket()
+func (s *App) Start() {
+	m, err := db.NewMarket()
 	if err != nil {
 		// Fail to connect to DB
 		panic(err)
 	}
 
-	svc := NewMarketService(m)
-	svc = NewLogService(svc)
+	svc := service.NewMarketService(m)
+	svc = service.NewLogService(svc)
 
-	h := NewDefaultHandler(svc)
+	h := handler.NewDefaultHandler(svc)
 
 	server := &http.Server{
 		Addr:         "localhost:3000",

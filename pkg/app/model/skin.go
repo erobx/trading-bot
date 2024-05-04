@@ -1,14 +1,16 @@
-package main
+package model
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/erobx/trading-bot/pkg/types"
 )
 
 type Skin struct {
 	Name  string    `json:"Name"`
 	Wear  string    `json:"Wear"`
-	Price dbDecimal `json:"Price"`
+	Price types.DbDecimal `json:"Price"`
 	// Shares []*Share
 }
 
@@ -17,7 +19,7 @@ type Share struct {
 	ListedPrice  float64
 }
 
-func NewSkin(name, wear string, intial dbDecimal) Skin {
+func NewSkin(name, wear string, intial types.DbDecimal) Skin {
 	return Skin{
 		Name:  name,
 		Wear:  wear,

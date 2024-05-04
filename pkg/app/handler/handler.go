@@ -1,17 +1,21 @@
-package main
+package handler
 
 import (
 	"context"
 	"encoding/json"
 	"math/rand"
 	"net/http"
+
+	"github.com/erobx/trading-bot/pkg/app/model"
+	"github.com/erobx/trading-bot/pkg/app/service"
+	"github.com/erobx/trading-bot/pkg/db"
 )
 
 type DefaultHandler struct {
-	svc Service
+	svc service.Service
 }
 
-func NewDefaultHandler(svc Service) *DefaultHandler {
+func NewDefaultHandler(svc service.Service) *DefaultHandler {
 	return &DefaultHandler{
 		svc: svc,
 	}
@@ -46,7 +50,7 @@ func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Success"))
 }
 
-func WriteSkin(skin Skin, w http.ResponseWriter) {
+func WriteSkin(skin model.Skin, w http.ResponseWriter) {
 	jsonData, err := json.Marshal(skin)
 	if err != nil {
 		return
@@ -57,14 +61,14 @@ func WriteSkin(skin Skin, w http.ResponseWriter) {
 func (h *DefaultHandler) addDummyData() {
 	names := []string{"Redline", "Water Elemental", "Block9"}
 	wears := [5]string{"Factory New", "Minimal Wear", "Field-Tested", "Well-Worn", "Battle-Scarred"}
-	prices := randomPrices()
+	prices := db.RandomPrices()
 
 	for i := 0; i < 40; i++ {
 		nameIndex := rand.Intn(len(names))
 		wearIndex := rand.Intn(len(wears))
 		priceIndex := rand.Intn(len(prices))
 
-		skin := Skin{
+		skin := model.Skin{
 			Name:  names[nameIndex],
 			Wear:  wears[wearIndex],
 			Price: prices[priceIndex],

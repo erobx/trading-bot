@@ -1,36 +1,40 @@
-package main
+package service
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/erobx/trading-bot/pkg/app/model"
+	"github.com/erobx/trading-bot/pkg/db"
+	"github.com/erobx/trading-bot/pkg/types"
 )
 
 type Service interface {
-	GetSkin(context context.Context, name, wear string) (Skin, error)
-	AddSkin(context context.Context, name, wear string, price dbDecimal) error
-	RemoveSkin(context context.Context, name, wear string, price dbDecimal) error
+	GetSkin(context context.Context, name, wear string) (model.Skin, error)
+	AddSkin(context context.Context, name, wear string, price types.DbDecimal) error
+	RemoveSkin(context context.Context, name, wear string, price types.DbDecimal) error
 }
 
 type MarketService struct {
-	market *Market
+	market *db.Market
 }
 
-func NewMarketService(m *Market) Service {
+func NewMarketService(m *db.Market) Service {
 	return &MarketService{
 		market: m,
 	}
 }
 
-func (ms *MarketService) GetSkin(context context.Context, name, wear string) (Skin, error) {
+func (ms *MarketService) GetSkin(context context.Context, name, wear string) (model.Skin, error) {
 	skin, ok := ms.market.GetSkin(name, wear)
 	if !ok {
-		return Skin{}, fmt.Errorf("skin not found")
+		return model.Skin{}, fmt.Errorf("skin not found")
 	}
 	return skin, nil
 }
 
-func (ms *MarketService) AddSkin(context context.Context, name, wear string, price dbDecimal) error {
-	err := ms.market.AddSkin(NewSkin(name, wear, price))
+func (ms *MarketService) AddSkin(context context.Context, name, wear string, price types.DbDecimal) error {
+	err := ms.market.AddSkin(model.NewSkin(name, wear, price))
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -38,7 +42,7 @@ func (ms *MarketService) AddSkin(context context.Context, name, wear string, pri
 	return nil
 }
 
-func (ms *MarketService) RemoveSkin(context context.Context, name, wear string, price dbDecimal) error {
+func (ms *MarketService) RemoveSkin(context context.Context, name, wear string, price types.DbDecimal) error {
 	if !ms.market.RemoveSkin(name, wear, price) {
 		return fmt.Errorf("could not remove skin")
 	}

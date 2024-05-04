@@ -1,4 +1,4 @@
-package main
+package steam
 
 import (
 	"encoding/json"
@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"trading-bot/model"
+
+	"github.com/erobx/trading-bot/pkg/app/model"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/joho/godotenv"
-	"github.com/erobx/pkg/app"
+	"github.com/erobx/trading-bot/pkg/app"
 )
 
 func main() {
@@ -12,7 +12,7 @@ func main() {
 	// steamApi()
 
 	app := app.NewApp()
-	app.start()
+	app.Start()
 }
 
 func steamApi() {
