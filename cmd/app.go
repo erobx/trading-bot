@@ -1,50 +1,35 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 )
 
-type App struct {
-	user *User
-}
+type App struct{}
 
-func NewApp(user *User) *App {
-	return &App{
-		user: user,
-	}
+func NewApp() *App {
+	return &App{}
 }
 
 func (s *App) start() {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", s.handleIndex)
-	mux.HandleFunc("/addskin", s.addSkin)
-
-	http.ListenAndServe(":3000", mux)
-}
-
-func (s *App) handleIndex(w http.ResponseWriter, r *http.Request) {
-	skin, err := s.user.GetSkin("Redline", "Factory New", 32)
+	m, err := NewMarket()
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		// Fail to connect to DB
+		panic(err)
 	}
 
-	WriteSkin(skin, w)
-}
+	svc := NewMarketService(m)
+	svc = NewLogService(svc)
 
-func (s *App) addSkin(w http.ResponseWriter, r *http.Request) {
-	if err := s.user.AddSkin("Redline", "Factory New", 32); err != nil {
-		return
-	}
-	w.WriteHeader(http.StatusAccepted)
-}
+	h := NewDefaultHandler(svc)
 
-func WriteSkin(skin Skin, w http.ResponseWriter) {
-	jsonData, err := json.Marshal(skin)
-	if err != nil {
-		return
+	server := &http.Server{
+		Addr:         "localhost:3000",
+		Handler:      h,
+		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 10,
 	}
-	w.Write(jsonData)
+	fmt.Printf("Listening on %s...\n", server.Addr)
+	server.ListenAndServe()
 }
