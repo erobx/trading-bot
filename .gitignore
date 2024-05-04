@@ -2,7 +2,7 @@
 /bin
 
 # Environment
-*txt
+*.txt
 .env
 
 # Data/Logs

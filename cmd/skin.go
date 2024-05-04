@@ -71,6 +71,6 @@ func NewShare(cp, lp float64) *Share {
 }
 
 func (s *Share) printInfo() {
-	fmt.Printf("  Share current price: $%.2f, ", s.CurrentPrice)
+	fmt.Printf("Share current price: $%.2f, ", s.CurrentPrice)
 	fmt.Printf("Share listed price: $%.2f\n", s.ListedPrice)
 }
