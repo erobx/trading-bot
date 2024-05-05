@@ -12,7 +12,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Db
 const file string = "market.sqlite"
 
 const createSkinTable string = `
@@ -24,33 +23,45 @@ const createSkinTable string = `
 	);
 `
 
-const createUserTable string = `
-	CREATE TABLE IF NOT EXISTS users (
-    email TEXT,
-	passwordHash TEXT,
-	token TEXT,
-	balance FLOAT
+const createStockTable string = `
+	CREATE TABLE IF NOT EXISTS stocks (
+	id TEXT NOT NULL PRIMARY KEY,
+	price FLOAT,
+	amount INTEGER
 	);
 `
 
-// MARKET
+// const createUserTable string = `
+// 	CREATE TABLE IF NOT EXISTS users (
+//     email TEXT,
+// 	passwordHash TEXT,
+// 	token TEXT,
+// 	balance FLOAT
+// 	);
+// `
+
 type Market struct {
 	mu sync.RWMutex
-	Db *sql.DB
+	db *sql.DB
 }
 
 func NewMarket() (*Market, error) {
-	Db, err := sql.Open("sqlite3", file)
+	db, err := sql.Open("sqlite3", file)
 	if err != nil {
 		return nil, err
 	}
-	// Db.Exec("DROP TABLE skins;")
-	if _, err = Db.Exec(createSkinTable); err != nil {
+	// db.Exec("DROP TABLE skins;")
+	// db.Exec("DROP TABLE stocks;")
+	if _, err = db.Exec(createSkinTable); err != nil {
+		return nil, err
+	}
+
+	if _, err = db.Exec(createStockTable); err != nil {
 		return nil, err
 	}
 
 	return &Market{
-		Db: Db,
+		db: db,
 	}, nil
 }
 
@@ -58,8 +69,8 @@ func (m *Market) AddSkin(skin model.Skin) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	q := "INSERT INTO SKINS (id, name, wear, price) VALUES(NULL,?,?,?);"
-	_, err := m.Db.Exec(q, skin.Name, skin.Wear, skin.Price)
+	q := "INSERT INTO skins (id, name, wear, price) VALUES(NULL,?,?,?);"
+	_, err := m.db.Exec(q, skin.Name, skin.Wear, skin.Price)
 	if err != nil {
 		return err
 	}
@@ -72,7 +83,7 @@ func (m *Market) GetSkin(name, wear string) (model.Skin, bool) {
 
 	skin := model.Skin{}
 	q := "SELECT price FROM skins WHERE name=? AND wear=? ORDER BY price DESC"
-	rows, err := m.Db.Query(q, name, wear)
+	rows, err := m.db.Query(q, name, wear)
 	if err != nil {
 		return skin, false
 	}
@@ -96,15 +107,118 @@ func (m *Market) GetSkin(name, wear string) (model.Skin, bool) {
 	return model.Skin{Name: name, Wear: wear, Price: median}, true
 }
 
-func (m *Market) RemoveSkin(name, wear string, price types.DbDecimal) bool {
+func (m *Market) RemoveSkin(name, wear string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return false
+	q := "DELETE FROM skins WHERE name=? AND wear=? IN (SELECT id FROM skins LIMIT 1);"
+	_, err := m.db.Exec(q, name, wear)
+
+	return err == nil
 }
 
-func (m *Market) generateKey(skin model.Skin) string {
-	return fmt.Sprintf("%s_%s_%.2f", skin.Name, skin.Wear, skin.Price)
+func (m *Market) GetStock(name, wear string) (model.Stock, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	key := m.generateKey(name, wear)
+	stock, ok := m.stockExists(key)
+	if !ok {
+		return stock, false
+	}
+
+	return stock, true
+}
+
+func (m *Market) UpdateStock(skin model.Skin, add bool) bool {
+	key := m.generateKey(skin.Name, skin.Wear)
+	stock, ok := m.stockExists(key)
+
+	if !ok && !add {
+		return false
+	}
+
+	if add {
+		if !ok {
+			m.mu.Lock()
+			defer m.mu.Unlock()
+			q := "INSERT INTO stocks (id, price, amount) VALUES(?,?,?);"
+			_, err := m.db.Exec(q, key, skin.Price, 1)
+			return err == nil
+		}
+
+		newPrice := m.getNewStockPrice(skin.Name, skin.Wear)
+		m.mu.Lock()
+		defer m.mu.Unlock()
+
+		q := "UPDATE stocks SET price=?, amount=? WHERE id=?;"
+		_, err := m.db.Exec(q, newPrice, stock.Amount+1, key)
+
+		return err == nil
+	}
+
+	newPrice := m.getNewStockPrice(skin.Name, skin.Wear)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if stock.Amount == 1 {
+		fmt.Println("Amount reached 0")
+		q := "DELETE FROM stocks WHERE id=?;"
+		_, err := m.db.Exec(q, key)
+		return err == nil
+	}
+
+	q := "UPDATE stocks SET price=?, amount=? WHERE id=?;"
+	_, err := m.db.Exec(q, newPrice, stock.Amount-1, key)
+
+	return err == nil
+}
+
+func (m *Market) generateKey(name, wear string) string {
+	return fmt.Sprintf("%s_%s", name, wear)
+}
+
+func (m *Market) stockExists(value string) (model.Stock, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	stock := model.Stock{}
+	q := "SELECT * FROM stocks WHERE id='" + value + "';"
+	row := m.db.QueryRow(q)
+
+	err := row.Scan(&stock.Id, &stock.Price, &stock.Amount)
+	if err != nil {
+		return stock, false
+	}
+	
+	return stock, true
+}
+
+func (m *Market) getNewStockPrice(name, wear string) types.DbDecimal {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	q := "SELECT price FROM skins WHERE name=? AND wear=? ORDER BY price DESC"
+	rows, err := m.db.Query(q, name, wear)
+	if err != nil {
+		return types.DbDecimal{}
+	}
+	defer rows.Close()
+
+	var prices []types.DbDecimal
+	for rows.Next() {
+		var i types.DbDecimal
+		err = rows.Scan(&i)
+		if err != nil {
+			return types.DbDecimal{}
+		}
+		prices = append(prices, i)
+	}
+	if len(prices) == 0 {
+		return types.DbDecimal{}
+	}
+
+	return getMedianPrice(prices)
 }
 
 func getMedianPrice(prices []types.DbDecimal) types.DbDecimal {
@@ -119,7 +233,9 @@ func RandomPrices() []types.DbDecimal {
 
 	for i := range prices {
 		d := min_d + rand.Float64()*max_d
-		prices[i] = types.DbDecimal(decimal.NewFromFloat(d))
+		s := fmt.Sprintf("%.2f", d)
+		temp, _ := decimal.NewFromString(s)
+		prices[i] = types.DbDecimal(temp)
 	}
 
 	return prices
