@@ -253,7 +253,7 @@ func RandomPrices() []types.DbDecimal {
 	prices := make([]types.DbDecimal, size)
 
 	for i := range prices {
-		d := min_d + rand.Float64()*max_d
+		d := min_d + rand.Float64()*(max_d-min_d)
 		s := fmt.Sprintf("%.2f", d)
 		temp, _ := decimal.NewFromString(s)
 		prices[i] = types.DbDecimal(temp)
