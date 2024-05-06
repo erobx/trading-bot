@@ -7,11 +7,12 @@ import (
 
 	"github.com/erobx/trading-bot/pkg/app/model"
 	"github.com/erobx/trading-bot/pkg/db"
+	"github.com/erobx/trading-bot/pkg/types"
 )
 
 var (
-	names = []string{"Redline", "Water-Elemental", "Block9"}
-	wears = [5]string{"Factory-New", "Minimal-Wear", "Field-Tested", "Well-Worn", "Battle-Scarred"}
+	names = types.Names
+	wears = types.Wears
 )
 
 type Sim struct {

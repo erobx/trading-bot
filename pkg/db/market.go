@@ -13,6 +13,7 @@ import (
 )
 
 const file string = "market.sqlite"
+const testFile string = "test.sqlite"
 
 const createSkinTable string = `
 	CREATE TABLE IF NOT EXISTS skins (
@@ -52,6 +53,27 @@ func NewMarket() (*Market, error) {
 	}
 	// db.Exec("DROP TABLE skins;")
 	// db.Exec("DROP TABLE stocks;")
+	if _, err = db.Exec(createSkinTable); err != nil {
+		return nil, err
+	}
+
+	if _, err = db.Exec(createStockTable); err != nil {
+		return nil, err
+	}
+
+	return &Market{
+		db: db,
+	}, nil
+}
+
+func NewTestMarket() (*Market, error) {
+	db, err := sql.Open("sqlite3", testFile)
+	if err != nil {
+		return nil, err
+	}
+	db.Exec("DROP TABLE skins;")
+	db.Exec("DROP TABLE stocks;")
+
 	if _, err = db.Exec(createSkinTable); err != nil {
 		return nil, err
 	}
@@ -111,7 +133,7 @@ func (m *Market) RemoveSkin(name, wear string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	q := "DELETE FROM skins WHERE name=? AND wear=? IN (SELECT id FROM skins LIMIT 1);"
+	q := "DELETE FROM skins WHERE id IN (SELECT id FROM skins WHERE name=? AND wear=? LIMIT 1);"
 	_, err := m.db.Exec(q, name, wear)
 
 	return err == nil
@@ -174,10 +196,6 @@ func (m *Market) UpdateStock(skin model.Skin, add bool) bool {
 	return err == nil
 }
 
-func (m *Market) generateKey(name, wear string) string {
-	return fmt.Sprintf("%s_%s", name, wear)
-}
-
 func (m *Market) stockExists(value string) (model.Stock, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -190,7 +208,7 @@ func (m *Market) stockExists(value string) (model.Stock, bool) {
 	if err != nil {
 		return stock, false
 	}
-	
+
 	return stock, true
 }
 
@@ -223,6 +241,10 @@ func (m *Market) getNewStockPrice(name, wear string) types.DbDecimal {
 
 func getMedianPrice(prices []types.DbDecimal) types.DbDecimal {
 	return prices[len(prices)/2]
+}
+
+func (m *Market) generateKey(name, wear string) string {
+	return fmt.Sprintf("%s_%s", name, wear)
 }
 
 func RandomPrices() []types.DbDecimal {

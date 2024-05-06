@@ -9,3 +9,9 @@ build-online:
 
 build-local:
 	@go build -o bin/sim.exe ./cmd/local/
+
+test: build-test
+	@./bin/test-sim.exe
+
+build-test:
+	@go build -o bin/test-sim.exe ./test/cmd_sim/

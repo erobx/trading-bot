@@ -43,7 +43,7 @@ func (ms *MarketService) AddSkin(context context.Context, name, wear string, pri
 }
 
 func (ms *MarketService) RemoveSkin(context context.Context, name, wear string, price types.DbDecimal) error {
-	if !ms.market.RemoveSkin(name, wear, price) {
+	if !ms.market.RemoveSkin(name, wear) {
 		return fmt.Errorf("could not remove skin")
 	}
 	return nil
