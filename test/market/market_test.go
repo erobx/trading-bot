@@ -19,24 +19,8 @@ func TestAddSkin(t *testing.T) {
 	p1, _ := decimal.NewFromString("12.12")
 	s1 := model.NewSkin(names[0], wears[0], types.DbDecimal(p1))
 
-	err := m.AddSkin(s1)
-	if err != nil {
-		t.Error(err)
-	}
-
-	ok := m.UpdateStock(s1, true)
-	if !ok {
-		t.Errorf("somehow failing\n")
-	}
-
-	stock, ok := m.GetStock(names[0], wears[0])
-	if !ok {
-		t.Errorf("somehow failing\n")
-	}
-
-	if stock.Price.String() != "12.12" {
-		t.Errorf("incorrect price, got %s", stock.Price.String())
-	}
+	addSkin(t, s1)
+	getStock(t, names[0], wears[0], "12.12")
 }
 
 func TestAddSkins(t *testing.T) {
@@ -48,64 +32,109 @@ func TestAddSkins(t *testing.T) {
 	s2 := model.NewSkin(names[1], wears[0], types.DbDecimal(p2))
 	s3 := model.NewSkin(names[1], wears[0], types.DbDecimal(p3))
 
-	err := m.AddSkin(s1)
-	if err != nil {
-		t.Error(err)
-	}
-	
-	err = m.AddSkin(s2)
-	if err != nil {
-		t.Error(err)
-	}
+	addSkin(t, s1)
+	addSkin(t, s2)
+	addSkin(t, s3)
 
-	err = m.AddSkin(s3)
-	if err != nil {
-		t.Error(err)
-	}
+	getSkin(t, names[1], wears[0], "50")
+	getStock(t, names[1], wears[0], "50")
 }
 
 func TestGetSkin(t *testing.T) {
-	skin, err := m.GetSkin(names[0], wears[0])
-	if !err {
-		t.Error(err)
-	}
+	getSkin(t, names[0], wears[0], "12.12")
+}
 
-	if skin.Price.String() != "12.12" {
-		t.Errorf("incorrect price, got %s", skin.Price.String())
-	}
+func TestGetStock(t *testing.T) {
+	getStock(t, names[0], wears[0], "12.12")
 }
 
 func TestGetSkins(t *testing.T) {
-	skin, err := m.GetSkin(names[1], wears[0])
-	if !err {
-		t.Error(err)
-	}
+	getSkin(t, names[1], wears[0], "50")
+}
 
-	if skin.Price.String() != "50" {
-		t.Errorf("incorrect price, got %s\n", skin.Price.String())
-	}
+func TestGetStocks(t *testing.T) {
+	getStock(t, names[1], wears[0], "50")
 }
 
 func TestRemoveSkin(t *testing.T) {
-	err := m.RemoveSkin(names[0], wears[0])
+	removeSkin(t, names[0], wears[0])
+	removeSkin(t, names[1], wears[0])
+
+	getSkin(t, names[1], wears[0], "42.42")
+	getStock(t, names[1], wears[0], "42.42")
+}
+
+func TestAddAndRemove(t *testing.T) {
+	p1, _ := decimal.NewFromString("10.11")
+	p2, _ := decimal.NewFromString("11.11")
+	p3, _ := decimal.NewFromString("12.11")
+	p4, _ := decimal.NewFromString("13.11")
+	p5, _ := decimal.NewFromString("14.11")
+
+	s1 := model.NewSkin(names[2], wears[0], types.DbDecimal(p1))
+	s2 := model.NewSkin(names[2], wears[0], types.DbDecimal(p2))
+	s3 := model.NewSkin(names[2], wears[0], types.DbDecimal(p3))
+	s4 := model.NewSkin(names[2], wears[0], types.DbDecimal(p4))
+	s5 := model.NewSkin(names[2], wears[0], types.DbDecimal(p5))
+
+	addSkin(t, s1)
+	addSkin(t, s2)
+	addSkin(t, s3)
+	addSkin(t, s4)
+	addSkin(t, s5)
+
+	getStock(t, names[2], wears[0], "12.11")
+
+	removeSkin(t, names[2], wears[0])
+	removeSkin(t, names[2], wears[0])
+
+	getStock(t, names[2], wears[0], "13.11")
+}
+
+func addSkin(t *testing.T, skin model.Skin) {
+	err := m.AddSkin(skin)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ok := m.UpdateStock(skin, true)
+	if !ok {
+		t.Errorf("somehow failing\n")
+	}
+}
+
+func removeSkin(t *testing.T, name, wear string) {
+	err := m.RemoveSkin(name, wear)
 	if !err {
 		t.Error(err)
 	}
 
-	err = m.RemoveSkin(names[1], wears[0])
+	skin := model.Skin{Name: name, Wear: wear}
+	ok := m.UpdateStock(skin, false)
+	if !ok {
+		t.Errorf("couldn't update after removing\n")
+	}
+}
+
+func getSkin(t *testing.T, name, wear, price string) {
+	skin, err := m.GetSkin(name, wear)
 	if !err {
 		t.Error(err)
 	}
 
-	skin, err := m.GetSkin(names[1], wears[0])
-	if !err {
-		t.Error(err)
-	}
-
-	if skin.Price.String() != "42.42" {
+	if skin.Price.String() != price {
 		t.Errorf("incorrect price, got %s", skin.Price.String())
 	}
 }
 
-func TestGetStoc(t *testing.T) {
+func getStock(t *testing.T, name, wear, price string) {
+	stock, ok := m.GetStock(name, wear)
+	if !ok {
+		t.Errorf("somehow failing\n")
+	}
+
+	if stock.Price.String() != price {
+		t.Errorf("incorrect price, got %s", stock.Price.String())
+	}
 }
+

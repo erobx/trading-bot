@@ -184,7 +184,6 @@ func (m *Market) UpdateStock(skin model.Skin, add bool) bool {
 	defer m.mu.Unlock()
 
 	if stock.Amount == 1 {
-		fmt.Println("Amount reached 0")
 		q := "DELETE FROM stocks WHERE id=?;"
 		_, err := m.db.Exec(q, key)
 		return err == nil
