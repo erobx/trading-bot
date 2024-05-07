@@ -19,7 +19,6 @@ func NewApp() *App {
 func (s *App) Start() {
 	m, err := db.NewMarket()
 	if err != nil {
-		// Fail to connect to DB
 		panic(err)
 	}
 
