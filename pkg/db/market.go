@@ -26,7 +26,7 @@ const createSkinTable string = `
 
 const createUserTable string = `
 	CREATE TABLE IF NOT EXISTS users (
-    email TEXT,
+	email TEXT,
 	passwordHash TEXT,
 	token TEXT,
 	balance FLOAT
