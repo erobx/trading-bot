@@ -32,9 +32,9 @@ func (ls *LogService) GetSkin(context context.Context, name, wear string) (model
 	return skin, err
 }
 
-func (ls *LogService) AddSkin(context context.Context, name, wear string, price types.DbDecimal) error {
+func (ls *LogService) AddSkin(context context.Context, name, wear, gun string, price, m, mx types.DbDecimal) error {
 	ls.logger.Printf("Attempting to add skin: %s, %s, $%s...\n", name, wear, price.String())
-	skin := ls.svc.AddSkin(context, name, wear, price)
+	skin := ls.svc.AddSkin(context, name, wear, gun, price, m, mx)
 	if skin != nil {
 		ls.logger.Printf("Could not list skin: %s, %s, $%s\n", name, wear, price.String())
 		return skin
@@ -52,6 +52,16 @@ func (ls *LogService) RemoveSkin(context context.Context, name, wear string, pri
 	}
 	ls.logger.Printf("Skin removed: %s, %s", name, wear)
 	return err
+}
+
+func (ls *LogService) AddGroup(context context.Context, group model.Group) error {
+	ls.logger.Printf("Adding group...")
+	return ls.svc.AddGroup(context, group)
+}
+
+func (ls *LogService) GetGroups(context context.Context) ([]model.DisplayGroup, error) {
+	groups, err := ls.svc.GetGroups(context)
+	return groups, err
 }
 
 func openLogFile(path string) *log.Logger {

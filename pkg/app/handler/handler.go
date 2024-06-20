@@ -6,6 +6,7 @@ import (
 
 	"github.com/erobx/trading-bot/pkg/app/model"
 	"github.com/erobx/trading-bot/pkg/app/service"
+	"github.com/erobx/trading-bot/pkg/view"
 )
 
 type DefaultHandler struct {
@@ -27,17 +28,24 @@ func (h *DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
-	skin, err := h.svc.GetSkin(r.Context(), "Redline", "Factory New")
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	g, _ := h.svc.GetGroups(r.Context())
+	props := ViewProps{
+		Skins: g,
 	}
-	WriteSkin(skin, w)
+	h.View(w, r, props)
 }
 
 func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("Success"))
+}
+
+type ViewProps struct {
+	Skins []model.DisplayGroup
+}
+
+func (h *DefaultHandler) View(w http.ResponseWriter, r *http.Request, props ViewProps) {
+	view.Page(props.Skins).Render(r.Context(), w)
 }
 
 func WriteSkin(skin model.Skin, w http.ResponseWriter) {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/erobx/trading-bot/pkg/app/handler"
+	"github.com/erobx/trading-bot/pkg/app/model"
 	"github.com/erobx/trading-bot/pkg/app/service"
 	"github.com/erobx/trading-bot/pkg/db"
 )
@@ -22,8 +23,10 @@ func (s *App) Start() {
 		panic(err)
 	}
 
+	addData(m)
+
 	svc := service.NewMarketService(m)
-	svc = service.NewLogService(svc)
+	//svc = service.NewLogService(svc)
 
 	h := handler.NewDefaultHandler(svc)
 
@@ -35,4 +38,11 @@ func (s *App) Start() {
 	}
 	fmt.Printf("Listening on %s...\n", server.Addr)
 	server.ListenAndServe()
+}
+
+func addData(m *db.Market) {
+	s := model.BuildSkin()
+	m.AddSkin(s)
+	g := model.NewGroup("pink")
+	m.AddGroup(g)
 }

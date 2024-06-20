@@ -11,8 +11,10 @@ import (
 
 type Service interface {
 	GetSkin(context context.Context, name, wear string) (model.Skin, error)
-	AddSkin(context context.Context, name, wear string, price types.DbDecimal) error
+	AddSkin(context context.Context, name, wear, gun string, price, m, mx types.DbDecimal) error
 	RemoveSkin(context context.Context, name, wear string, price types.DbDecimal) error
+	AddGroup(context context.Context, group model.Group) error
+	GetGroups(context context.Context) ([]model.DisplayGroup, error)
 }
 
 type MarketService struct {
@@ -33,8 +35,8 @@ func (ms *MarketService) GetSkin(context context.Context, name, wear string) (mo
 	return skin, nil
 }
 
-func (ms *MarketService) AddSkin(context context.Context, name, wear string, price types.DbDecimal) error {
-	err := ms.market.AddSkin(model.NewSkin(name, wear, price))
+func (ms *MarketService) AddSkin(context context.Context, name, wear, gun string, price, m, mx types.DbDecimal) error {
+	err := ms.market.AddSkin(model.NewSkin(name, wear, gun, price, m, mx))
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -43,8 +45,21 @@ func (ms *MarketService) AddSkin(context context.Context, name, wear string, pri
 }
 
 func (ms *MarketService) RemoveSkin(context context.Context, name, wear string, price types.DbDecimal) error {
-	if !ms.market.RemoveSkin(name, wear) {
+	if !ms.market.RemoveSkin(name, wear, price) {
 		return fmt.Errorf("could not remove skin")
 	}
 	return nil
+}
+
+func (ms *MarketService) AddGroup(context context.Context, group model.Group) error {
+	return ms.market.AddGroup(group)
+}
+
+func (ms *MarketService) GetGroups(context context.Context) ([]model.DisplayGroup, error) {
+	groups, err := ms.market.GetGroups()
+	if err != nil {
+		fmt.Println(err)
+		return []model.DisplayGroup{}, err
+	}
+	return groups, nil
 }

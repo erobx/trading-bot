@@ -1,9 +1,34 @@
 package view
 
+import (
+  "github.com/erobx/trading-bot/pkg/app/model"
+)
+
+templ index() {
+  <div>
+    <p>Hello World!</p>
+  </div>
+}
+
+//              Tier
+// |   Redline   | Block9 |
+// | Safari Mesh | Dragon Lore |
+templ group(tier string, skins []model.DisplayGroup) {
+  <div>
+    <p>Tier: {tier}</p>
+    for _, s := range skins {
+      <p>Name: {s.SkinName}</p>
+    }
+  </div>
+}
+
 templ addSkin() {
     <div>
       <form id="newSkinForm" action="/" method="POST" hx-post="/addskin">
-
       </form>
     </div>
+}
+
+templ Page(skins []model.DisplayGroup) {
+    @group(skins[0].Tier, skins)
 }
