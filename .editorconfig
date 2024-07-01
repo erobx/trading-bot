@@ -1,0 +1,5 @@
+root = true
+
+[*.templ]
+indent_style = tab
+index_size = 2
