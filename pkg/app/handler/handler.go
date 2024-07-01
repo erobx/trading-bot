@@ -37,7 +37,7 @@ func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Success"))
+	w.Write([]byte("Changed pussy"))
 }
 
 type ViewProps struct {

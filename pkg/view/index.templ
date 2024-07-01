@@ -1,34 +1,53 @@
 package view
 
 import (
-  "github.com/erobx/trading-bot/pkg/app/model"
+	"strconv"
+	"github.com/erobx/trading-bot/pkg/app/model"
 )
 
-templ index() {
-  <div>
-    <p>Hello World!</p>
-  </div>
+templ Page(skins []model.DisplayGroup) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full">
+		<head>
+			<title>Trade Ups</title>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<link rel="stylesheet" href="/public/styles.css"/>
+		</head>
+		<body class="text-center">
+			<div class="flex-wrap">
+				for i := 0; i < 5; i++ {
+					@group(skins[0].Tier, skins)
+				}
+			</div>
+		</body>
+	</html>
 }
 
 //              Tier
 // |   Redline   | Block9 |
 // | Safari Mesh | Dragon Lore |
 templ group(tier string, skins []model.DisplayGroup) {
-  <div>
-    <p>Tier: {tier}</p>
-    for _, s := range skins {
-      <p>Name: {s.SkinName}</p>
-    }
-  </div>
+	<div class="p-4">
+		<p>Tier: { tier }</p>
+		<div class="grid grid-cols-3 gap-1 justify-center">
+			for _, s := range skins {
+				<div class="container">
+					<div class="title">Name: { s.SkinName }</div>
+					<div>Group: { strconv.Itoa(s.GroupId) }</div>
+				</div>
+			}
+		</div>
+	</div>
 }
 
 templ addSkin() {
-    <div>
-      <form id="newSkinForm" action="/" method="POST" hx-post="/addskin">
-      </form>
-    </div>
-}
-
-templ Page(skins []model.DisplayGroup) {
-    @group(skins[0].Tier, skins)
+	<div>
+		<form id="newSkinForm" action="/" method="POST" hx-post="/addskin">
+			<div>
+				<label>Add new skin</label>
+				<input type="text" name="skin" id="skin"/>
+			</div>
+		</form>
+	</div>
 }

@@ -1,17 +1,17 @@
 run-online: build-online
-	@./bin/trade.exe
-
-run-local: build-local
-	@./bin/sim.exe
+	@./bin/trade
 
 build-online:
-	@go build -o bin/trade.exe ./cmd/online/
+	@go build -o bin/trade ./cmd
 
-build-local:
-	@go build -o bin/sim.exe ./cmd/local/
+templ:
+	@templ generate --watch --proxy="http://localhost:3000" --open-browser=false -v
 
-test: build-test
-	@./bin/test-sim.exe
+server:
+	@air
 
-build-test:
-	@go build -o bin/test-sim.exe ./test/cmd_sim/
+tailwind:
+	@npx tailwindcss -i pkg/view/css/input.css -o public/styles.css --watch
+
+live:
+	make -j3 tailwind templ server

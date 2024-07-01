@@ -4,6 +4,8 @@
 # Environment
 *.txt
 .env
+node_modules/
+tmp/
 
 # Data/Logs
 *.json

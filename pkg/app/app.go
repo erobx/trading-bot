@@ -11,10 +11,26 @@ import (
 	"github.com/erobx/trading-bot/pkg/db"
 )
 
-type App struct{}
+type App struct {
+	Mux *http.ServeMux
+}
 
 func NewApp() *App {
-	return &App{}
+	return &App{
+		Mux: http.NewServeMux(),
+	}
+}
+
+var dev = true
+
+func disableCacheInDevMode(next http.Handler) http.Handler {
+	if !dev {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *App) Start() {
@@ -23,16 +39,17 @@ func (s *App) Start() {
 		panic(err)
 	}
 
-	addData(m)
-
 	svc := service.NewMarketService(m)
 	//svc = service.NewLogService(svc)
 
 	h := handler.NewDefaultHandler(svc)
 
+	s.Mux.Handle("/public/", disableCacheInDevMode(http.StripPrefix("/public", http.FileServer(http.Dir("public")))))
+	s.Mux.Handle("/", h)
+
 	server := &http.Server{
 		Addr:         "localhost:3000",
-		Handler:      h,
+		Handler:      s.Mux,
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
 	}
