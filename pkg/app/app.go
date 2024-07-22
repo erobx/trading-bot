@@ -7,7 +7,6 @@ import (
 
 	"github.com/erobx/trading-bot/pkg/app/handler"
 	"github.com/erobx/trading-bot/pkg/app/model"
-	"github.com/erobx/trading-bot/pkg/app/service"
 	"github.com/erobx/trading-bot/pkg/db"
 )
 
@@ -39,13 +38,14 @@ func (s *App) Start() {
 		panic(err)
 	}
 
-	svc := service.NewMarketService(m)
-	//svc = service.NewLogService(svc)
+	//addData(m)
 
-	h := handler.NewDefaultHandler(svc)
+	h := handler.NewDefaultHandler(m)
+	//mh := handler.NewModalHandler(svc)
 
 	s.Mux.Handle("/public/", disableCacheInDevMode(http.StripPrefix("/public", http.FileServer(http.Dir("public")))))
 	s.Mux.Handle("/", h)
+	//s.Mux.Handle("/modal", mh)
 
 	server := &http.Server{
 		Addr:         "localhost:3000",
@@ -58,8 +58,10 @@ func (s *App) Start() {
 }
 
 func addData(m *db.Market) {
-	s := model.BuildSkin()
-	m.AddSkin(s)
+	for i := 0; i < 5; i++ {
+		s := model.BuildSkin()
+		m.AddSkin(s)
+	}
 	g := model.NewGroup("pink")
 	m.AddGroup(g)
 }

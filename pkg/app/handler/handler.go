@@ -2,20 +2,21 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/erobx/trading-bot/pkg/app/model"
-	"github.com/erobx/trading-bot/pkg/app/service"
+	"github.com/erobx/trading-bot/pkg/db"
 	"github.com/erobx/trading-bot/pkg/view"
 )
 
 type DefaultHandler struct {
-	svc service.Service
+	market *db.Market
 }
 
-func NewDefaultHandler(svc service.Service) *DefaultHandler {
+func NewDefaultHandler(m *db.Market) *DefaultHandler {
 	return &DefaultHandler{
-		svc: svc,
+		market: m,
 	}
 }
 
@@ -28,24 +29,24 @@ func (h *DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
-	g, _ := h.svc.GetGroups(r.Context())
-	props := ViewProps{
-		Skins: g,
-	}
-	h.View(w, r, props)
+	g, _ := h.market.GetActiveGroups()
+	h.View(w, r, ViewProps{
+		Groups: g,
+	})
 }
 
 func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Changed pussy"))
+	r.ParseForm()
+
+	fmt.Println(r.Form.Get("gid"))
 }
 
 type ViewProps struct {
-	Skins []model.DisplayGroup
+	Groups []model.DisplayGroup
 }
 
 func (h *DefaultHandler) View(w http.ResponseWriter, r *http.Request, props ViewProps) {
-	view.Page(props.Skins).Render(r.Context(), w)
+	view.Groups(props.Groups).Render(r.Context(), w)
 }
 
 func WriteSkin(skin model.Skin, w http.ResponseWriter) {

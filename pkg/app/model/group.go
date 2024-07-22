@@ -1,17 +1,14 @@
 package model
 
-import ()
-
 type Group struct {
 	Tier   string
 	Active int
 }
 
 type DisplayGroup struct {
-	GroupId  int
-	Tier     string
-	SkinId   int
-	SkinName string
+	GroupId int
+	Tier    string
+	Skins   []Skin
 }
 
 func NewGroup(t string) Group {

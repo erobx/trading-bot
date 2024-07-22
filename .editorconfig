@@ -3,3 +3,4 @@ root = true
 [*.templ]
 indent_style = tab
 index_size = 2
+tabstop = 2

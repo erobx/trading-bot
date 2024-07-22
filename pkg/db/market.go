@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 	"math/rand/v2"
 	"sync"
 
@@ -110,29 +110,16 @@ func (m *Market) GetSkin(name, wear string) (model.Skin, bool) {
 	defer m.mu.RUnlock()
 
 	skin := model.Skin{}
-	q := "SELECT price FROM skins WHERE name=? AND wear=? ORDER BY price DESC"
+	q := "SELECT name,wear,price,gun,min,max FROM skins WHERE name=? AND wear=?"
 	rows, err := m.Db.Query(q, name, wear)
 	if err != nil {
 		return skin, false
 	}
 	defer rows.Close()
 
-	var prices []types.DbDecimal
-	for rows.Next() {
-		var i types.DbDecimal
-		err = rows.Scan(&i)
-		if err != nil {
-			return skin, false
-		}
-		prices = append(prices, i)
-	}
-	if len(prices) == 0 {
-		return model.Skin{}, false
-	}
+	err = rows.Scan(&skin.Name, &skin.Wear, &skin.Price, &skin.Gun, &skin.Min, &skin.Max)
 
-	median := getMedianPrice(prices)
-
-	return model.Skin{Name: name, Wear: wear, Price: median}, true
+	return skin, true
 }
 
 func (m *Market) AddGroup(group model.Group) error {
@@ -147,16 +134,17 @@ func (m *Market) AddGroup(group model.Group) error {
 	return nil
 }
 
-func (m *Market) GetGroups() ([]model.DisplayGroup, error) {
+func (m *Market) GetActiveGroups() ([]model.DisplayGroup, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Get 10 groups at a time per page
-	groups := make([]model.DisplayGroup, 0)
-	q := `SELECT g.id AS group_id, g.tier, gs.skin_id, s.name
+	q := `
+	SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun,
+		s.min, s.max
 		FROM groups g
-	      JOIN group_skins gs ON (g.id = gs.group_id)
-	      JOIN skins s ON (gs.skin_id = s.id);
+	  JOIN group_skins gs ON (g.id=gs.group_id)
+	  JOIN skins s ON (gs.skin_id=s.id)
+	  ORDER BY g.id, s.id;
 	`
 	rows, err := m.Db.Query(q)
 	if err != nil {
@@ -164,31 +152,56 @@ func (m *Market) GetGroups() ([]model.DisplayGroup, error) {
 	}
 	defer rows.Close()
 
+	var groups []model.DisplayGroup
+	var currentGroup *model.DisplayGroup
+
 	for rows.Next() {
-		var g model.DisplayGroup
-		err := rows.Scan(&g.GroupId, &g.Tier, &g.SkinId, &g.SkinName)
+		var gID int
+		var gTier string
+		var sName string
+		var sWear string
+		var sPrice types.DbDecimal
+		var sGun string
+		var sMin types.DbDecimal
+		var sMax types.DbDecimal
+
+		err := rows.Scan(&gID, &gTier, &sName, &sWear, &sPrice, &sGun, &sMin, &sMax)
 		if err != nil {
 			return groups, err
 		}
-		groups = append(groups, g)
+
+		if currentGroup == nil || currentGroup.GroupId != gID {
+			if currentGroup != nil {
+				groups = append(groups, *currentGroup)
+			}
+			currentGroup = &model.DisplayGroup{
+				GroupId: gID,
+				Tier:    gTier,
+				Skins:   []model.Skin{},
+			}
+		}
+
+		sTemp := model.Skin{
+			Name:  sName,
+			Wear:  sWear,
+			Price: sPrice,
+			Gun:   sGun,
+			Min:   sMin,
+			Max:   sMax,
+		}
+		currentGroup.Skins = append(currentGroup.Skins, sTemp)
+	}
+	rows.Close()
+
+	if currentGroup != nil {
+		groups = append(groups, *currentGroup)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
 	}
 
 	return groups, nil
-}
-
-func (m *Market) RemoveSkin(name, wear string, price types.DbDecimal) bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	return false
-}
-
-func (m *Market) generateKey(skin model.Skin) string {
-	return fmt.Sprintf("%s_%s_%.2f", skin.Name, skin.Wear, skin.Price.String())
-}
-
-func getMedianPrice(prices []types.DbDecimal) types.DbDecimal {
-	return prices[len(prices)/2]
 }
 
 func RandomPrices() []types.DbDecimal {

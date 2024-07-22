@@ -1,7 +1,6 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/erobx/trading-bot/pkg/types"
@@ -22,27 +21,10 @@ func NewSkin(name, wear, gun string, price, m, mx types.DbDecimal) Skin {
 		Name:  name,
 		Wear:  wear,
 		Price: price,
+		Gun:   gun,
 		Min:   m,
 		Max:   mx,
 	}
-}
-
-func (s Skin) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Name  string
-		Wear  string
-		Price string
-		Gun   string
-		Min   string
-		Max   string
-	}{
-		Name:  s.Name,
-		Wear:  s.Wear,
-		Price: s.Price.String(),
-		Gun:   s.Gun,
-		Min:   s.Min.String(),
-		Max:   s.Max.String(),
-	})
 }
 
 func (s *Skin) generateKey() string {
