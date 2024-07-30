@@ -47,16 +47,22 @@ templ group(tier string, gid string, currentSkins []model.Skin) {
 			</h1>
 		</div>
 		<div class="grid grid-cols-5 grid-rows-2 gap-2">
-			for _, s := range currentSkins {
-				<div class="">
-					<p>{ s.Name }</p>
-					<p>{ s.Wear }</p>
-					<p>{ s.Gun }</p>
-					<p>${ s.Price.String() }</p>
-				</div>
-			}
-			if len(currentSkins) != 10 {
-				for i := 0; i < 10-len(currentSkins); i++ {
+			if len(currentSkins) != 0 {
+				for _, s := range currentSkins {
+					<div class="">
+						<p>{ s.Name }</p>
+						<p>{ s.Wear }</p>
+						<p>{ s.Gun }</p>
+						<p>${ s.Price.String() }</p>
+					</div>
+				}
+				if len(currentSkins) != 10 {
+					for i := 0; i < 10-len(currentSkins); i++ {
+						@addSkin(gid)
+					}
+				}
+			} else {
+				for i := 0; i < 10; i++ {
 					@addSkin(gid)
 				}
 			}

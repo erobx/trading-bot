@@ -20,21 +20,13 @@ func NewDefaultHandler(m *db.Market) *DefaultHandler {
 
 func (h *DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		h.Post(w, r)
+		//		h.Post(w, r)
 		return
 	}
 	h.Get(w, r)
 }
 
 func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
-	g, _ := h.market.GetActiveGroups()
-	h.View(w, r, ViewProps{
-		Groups: g,
-	})
-}
-
-func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	g, _ := h.market.GetActiveGroups()
 	h.View(w, r, ViewProps{
 		Groups: g,

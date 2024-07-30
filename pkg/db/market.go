@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"sync"
@@ -147,12 +148,24 @@ func (m *Market) AddGroup(group model.Group) error {
 }
 
 func (m *Market) GetActiveGroups() ([]model.DisplayGroup, error) {
+	groups, err := getFilledGroups(m)
+	if err != nil {
+		fmt.Println(err)
+		return groups, err
+	}
+
+	emptyGroups, err := getEmptyGroups(m)
+	groups = append(groups, emptyGroups...)
+
+	return groups, err
+}
+
+func getFilledGroups(m *Market) ([]model.DisplayGroup, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	q := `
-	SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun,
-		s.min, s.max
+	SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun, s.min, s.max
 		FROM groups g
 	  JOIN group_skins gs ON (g.id=gs.group_id)
 	  JOIN skins s ON (gs.skin_id=s.id)
@@ -202,6 +215,60 @@ func (m *Market) GetActiveGroups() ([]model.DisplayGroup, error) {
 			Max:   sMax,
 		}
 		currentGroup.Skins = append(currentGroup.Skins, sTemp)
+	}
+	rows.Close()
+
+	if currentGroup != nil {
+		groups = append(groups, *currentGroup)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return groups, nil
+}
+
+func getEmptyGroups(m *Market) ([]model.DisplayGroup, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	q := `
+	SELECT g.id AS group_id, g.tier
+		FROM groups g
+		WHERE g.active=1 AND
+		NOT EXISTS (SELECT group_id FROM group_skins
+			WHERE g.id=group_id)
+	ORDER BY g.id LIMIT(4);
+	`
+	rows, err := m.Db.Query(q)
+	if err != nil {
+		return []model.DisplayGroup{}, err
+	}
+	defer rows.Close()
+
+	var groups []model.DisplayGroup
+	var currentGroup *model.DisplayGroup
+
+	for rows.Next() {
+		var gID int
+		var gTier string
+
+		err := rows.Scan(&gID, &gTier)
+		if err != nil {
+			return groups, err
+		}
+
+		if currentGroup == nil || currentGroup.GroupId != gID {
+			if currentGroup != nil {
+				groups = append(groups, *currentGroup)
+			}
+			currentGroup = &model.DisplayGroup{
+				GroupId: gID,
+				Tier:    gTier,
+				Skins:   []model.Skin{},
+			}
+		}
 	}
 	rows.Close()
 
