@@ -105,21 +105,33 @@ func (m *Market) AddSkin(skin model.Skin) error {
 	return nil
 }
 
-func (m *Market) GetSkin(name, wear string) (model.Skin, bool) {
+func (m *Market) AddSkinToGroup(gid string, sid string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	q := "INSERT INTO GROUP_SKINS (id, group_id, skin_id) VALUES(NULL,?,?);"
+	_, err := m.Db.Exec(q, gid, sid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Market) GetSkin(sid string) (model.Skin, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	skin := model.Skin{}
-	q := "SELECT name,wear,price,gun,min,max FROM skins WHERE name=? AND wear=?"
-	rows, err := m.Db.Query(q, name, wear)
+	q := "SELECT name,wear,price,gun,min,max FROM skins WHERE id=?"
+	rows, err := m.Db.Query(q, sid)
 	if err != nil {
-		return skin, false
+		return skin, err
 	}
 	defer rows.Close()
 
 	err = rows.Scan(&skin.Name, &skin.Wear, &skin.Price, &skin.Gun, &skin.Min, &skin.Max)
 
-	return skin, true
+	return skin, err
 }
 
 func (m *Market) AddGroup(group model.Group) error {

@@ -41,11 +41,11 @@ func (s *App) Start() {
 	//addData(m)
 
 	h := handler.NewDefaultHandler(m)
-	//mh := handler.NewModalHandler(svc)
+	mh := handler.NewModalHandler(m)
 
 	s.Mux.Handle("/public/", disableCacheInDevMode(http.StripPrefix("/public", http.FileServer(http.Dir("public")))))
 	s.Mux.Handle("/", h)
-	//s.Mux.Handle("/modal", mh)
+	s.Mux.Handle("/modal", mh)
 
 	server := &http.Server{
 		Addr:         "localhost:3000",

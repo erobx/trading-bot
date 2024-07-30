@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/erobx/trading-bot/pkg/app/model"
@@ -37,8 +35,10 @@ func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *DefaultHandler) Post(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-
-	fmt.Println(r.Form.Get("gid"))
+	g, _ := h.market.GetActiveGroups()
+	h.View(w, r, ViewProps{
+		Groups: g,
+	})
 }
 
 type ViewProps struct {
@@ -47,12 +47,4 @@ type ViewProps struct {
 
 func (h *DefaultHandler) View(w http.ResponseWriter, r *http.Request, props ViewProps) {
 	view.Groups(props.Groups).Render(r.Context(), w)
-}
-
-func WriteSkin(skin model.Skin, w http.ResponseWriter) {
-	jsonData, err := json.Marshal(skin)
-	if err != nil {
-		return
-	}
-	w.Write(jsonData)
 }
