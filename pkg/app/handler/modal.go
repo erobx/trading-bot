@@ -2,7 +2,9 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
+	"github.com/erobx/trading-bot/pkg/app/model"
 	"github.com/erobx/trading-bot/pkg/db"
 	"github.com/erobx/trading-bot/pkg/view"
 )
@@ -36,12 +38,25 @@ func (h *ModalHandler) Post(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	g, _ := h.market.GetActiveGroups()
-	h.View(w, r, ViewProps{
-		Groups: g,
+	// get group that changed
+	g, err := h.market.GetChangedGroup(gid)
+	if err != nil {
+		panic(err)
+	}
+
+	h.View(w, r, GroupProps{
+		ID:    strconv.Itoa(g.GroupId),
+		Tier:  g.Tier,
+		Skins: g.Skins,
 	})
 }
 
-func (h *ModalHandler) View(w http.ResponseWriter, r *http.Request, props ViewProps) {
-	view.Groups(props.Groups).Render(r.Context(), w)
+type GroupProps struct {
+	ID    string
+	Tier  string
+	Skins []model.Skin
+}
+
+func (h *ModalHandler) View(w http.ResponseWriter, r *http.Request, props GroupProps) {
+	view.Group(props.ID, props.Tier, props.Skins).Render(r.Context(), w)
 }

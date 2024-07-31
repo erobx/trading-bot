@@ -55,14 +55,6 @@ const createUserTable string = `
 	);
 `
 
-/*
-M-to-M joining
-SELECT g.id AS group_id, g.tier, gs.skin_id, s.name
-  FROM groups g
-JOIN group_skins gs ON (g.id = gs.group_id)
-JOIN skins s ON (gs.skin_id = s.id);
-*/
-
 // MARKET
 type Market struct {
 	mu sync.RWMutex
@@ -160,6 +152,62 @@ func (m *Market) GetActiveGroups() ([]model.DisplayGroup, error) {
 	return groups, err
 }
 
+func (m *Market) GetChangedGroup(gid string) (model.DisplayGroup, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	q := `
+		SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun, s.min, s.max
+			FROM groups g
+		JOIN group_skins gs ON (g.id=gs.group_id)
+		JOIN skins s ON (gs.skin_id=s.id)
+			WHERE g.id=?;
+	`
+	rows, err := m.Db.Query(q, gid)
+	if err != nil {
+		return model.DisplayGroup{}, err
+	}
+	defer rows.Close()
+
+	var group model.DisplayGroup
+	var gID int
+	var gTier string
+
+	group = model.DisplayGroup{
+		Skins: []model.Skin{},
+	}
+
+	for rows.Next() {
+		var sName string
+		var sWear string
+		var sPrice types.DbDecimal
+		var sGun string
+		var sMin types.DbDecimal
+		var sMax types.DbDecimal
+
+		err := rows.Scan(&gID, &gTier, &sName, &sWear, &sPrice, &sGun, &sMin, &sMax)
+		if err != nil {
+			return group, err
+		}
+
+		sTemp := model.Skin{
+			Name:  sName,
+			Wear:  sWear,
+			Price: sPrice,
+			Gun:   sGun,
+			Min:   sMin,
+			Max:   sMax,
+		}
+		group.Skins = append(group.Skins, sTemp)
+	}
+	defer rows.Close()
+
+	group.GroupId = gID
+	group.Tier = gTier
+
+	return group, nil
+}
+
 func getFilledGroups(m *Market) ([]model.DisplayGroup, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -239,7 +287,7 @@ func getEmptyGroups(m *Market) ([]model.DisplayGroup, error) {
 		WHERE g.active=1 AND
 		NOT EXISTS (SELECT group_id FROM group_skins
 			WHERE g.id=group_id)
-	ORDER BY g.id LIMIT(4);
+	ORDER BY g.id LIMIT(1);
 	`
 	rows, err := m.Db.Query(q)
 	if err != nil {
