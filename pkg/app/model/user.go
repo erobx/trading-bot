@@ -1,7 +1,8 @@
 package model
 
 type User struct {
-	Balance float32
+	Balance   float32
+	Inventory []Skin
 }
 
 func NewUser(b float32) *User {
@@ -9,3 +10,4 @@ func NewUser(b float32) *User {
 		Balance: b,
 	}
 }
+

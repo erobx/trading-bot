@@ -5,11 +5,12 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"strconv"
+	"time"
 )
 
-templ page() {
+templ page(isLoggedIn bool) {
 	<!DOCTYPE html>
-	<html lang="en" class="h-full">
+	<html lang="en" class="h-full" data-theme="dim">
 		<head>
 			<title>TradeUps</title>
 			<meta charset="UTF-8"/>
@@ -18,31 +19,58 @@ templ page() {
 			<script src="/public/htmx.min.js"></script>
 		</head>
 		<div class="navbar bg-base-100">
-			<a class="btn btn-ghost text-xl">TradeUps</a>
+			<div>
+				<a class="btn btn-ghost text-xl" href="/">TradeUps</a>
+			</div>
+			<div class="navbar-start">
+				<a class="btn btn-ghost text-lg" href="/groups">Groups</a>
+			</div>
+			if !isLoggedIn {
+				<div class="navbar-end">
+					<a class="btn btn-ghost txt-lg" href="/login">Login</a>
+				</div>
+			}
 		</div>
 		<body class="text-center">
-			//<div>
-			//	<h1>Active Pools</h1>
-			//</div>
-			<div id="main" class="flex flex-wrap justify-center">
-				{ children... }
-			</div>
+			{ children... }
 		</body>
 	</html>
 }
 
-templ Groups(groups []model.DisplayGroup) {
-	@page() {
-		for _, g := range groups {
-			@Group(strconv.Itoa(g.GroupId), g.Tier, g.Skins)
+templ login(isLoggedIn bool) {
+	@page(isLoggedIn) {
+	}
+}
+
+templ Index(isLoggedIn bool, inv []model.Skin) {
+	@page(isLoggedIn) {
+		for _, s := range inv {
+			<div>
+				<p>{ s.Gun }</p>
+				<p>{ s.Name }</p>
+				<p>{ s.Wear }</p>
+				<p>{ s.Fl.String() }</p>
+				<p>{ s.Price.String() }</p>
+			</div>
 		}
 	}
 }
 
+templ Groups(groups []model.DisplayGroup, t time.Time, isLoggedIn bool) {
+	@page(isLoggedIn) {
+		<div>Active Pools</div>
+		<div id="main" class="flex flex-wrap justify-center">
+			for _, g := range groups {
+				@Group(strconv.Itoa(g.GroupId), g.Tier, g.Skins)
+			}
+		</div>
+	}
+}
+
 templ Group(gid, tier string, currentSkins []model.Skin) {
-	<div id={ string("card" + gid) } class="card items-center text-center p-4">
+	<div id={ string("group" + gid) } class="card items-center text-center p-4">
 		<div class="card-title mb-2">
-			<h1>
+			<h1 class="text-lg">
 				{ cases.Title(language.English, cases.Compact).String(tier) }
 			</h1>
 		</div>
@@ -83,10 +111,31 @@ templ addSkin(gid string) {
 }
 
 templ skinForm(gid string) {
-	<h3>Select a skin</h3>
-	<form id="newSkinForm" method="POST" hx-post="/modal" hx-target={ string("#card" + gid) } hx-swap="outerHTML">
-		<input type="hidden" id="gid" name="gid" value={ gid }/>
-		<input type="hidden" id="sid" name="sid" value="1"/>
-		<button class="btn" type="submit">Confirm</button>
-	</form>
+	<div class="flex-col max-w-md space-y-2">
+		<h3>Select a skin</h3>
+		<form id="newSkinForm" method="POST" hx-post="/modal" hx-target={ string("#group" + gid) } hx-swap="outerHTML">
+			<input type="hidden" id="gid" name="gid" value={ gid }/>
+			<input type="hidden" id="sid" name="sid" value="1"/>
+			@searchSkin()
+			<button class="btn" type="submit">Confirm</button>
+		</form>
+	</div>
+}
+
+templ searchSkin() {
+	<label class="input input-bordered flex items-center gap-2">
+		<input type="text" class="grow" placeholder="Search"/>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 16 16"
+			fill="currentColor"
+			class="h-4 w-4 opacity-70"
+		>
+			<path
+				fill-rule="evenodd"
+				d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+				clip-rule="evenodd"
+			></path>
+		</svg>
+	</label>
 }

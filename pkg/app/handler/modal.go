@@ -30,16 +30,16 @@ func (h *ModalHandler) Post(w http.ResponseWriter, r *http.Request) {
 	// add skin to approriate group
 	r.ParseForm()
 
-	gid := r.FormValue("gid")
-	sid := r.FormValue("sid")
+	groupId := r.FormValue("gid")
+	skinId := r.FormValue("sid")
 
-	err := h.market.AddSkinToGroup(gid, sid)
+	err := h.market.AddSkinToGroup(groupId, skinId)
 	if err != nil {
 		panic(err)
 	}
 
 	// get group that changed
-	g, err := h.market.GetChangedGroup(gid)
+	g, err := h.market.GetChangedGroup(groupId)
 	if err != nil {
 		panic(err)
 	}

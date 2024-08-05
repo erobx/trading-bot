@@ -1,3 +1,5 @@
+const { default: daisyui } = require('daisyui');
+
 module.exports = {
   content: [
     "./pkg/view/*.templ",
@@ -1061,6 +1063,12 @@ module.exports = {
     },
   },
   plugins: [
+    require('@tailwindcss/typography'),
     require('daisyui'),
   ],
+  daisyui: {
+    themes: [
+      "dim",
+    ],
+  },
 }

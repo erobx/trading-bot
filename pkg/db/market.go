@@ -13,7 +13,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Db
 const file string = "market.sqlite"
 
 const createSkinTable string = `
@@ -36,6 +35,14 @@ const createGroupTable string = `
 	);
 `
 
+const createUsersTable string = `
+	CREATE TABLE IF NOT EXISTS users (
+	id INTEGER NOT NULL PRIMARY KEY,
+	username TEXT,
+	hash TEXT
+	);
+`
+
 const createGroupSkinTable string = `
 	CREATE TABLE IF NOT EXISTS group_skins (
 	id INTEGER NOT NULL PRIMARY KEY,
@@ -46,39 +53,48 @@ const createGroupSkinTable string = `
 	);
 `
 
-const createUserTable string = `
-	CREATE TABLE IF NOT EXISTS users (
-	email TEXT,
-	passwordHash TEXT,
-	token TEXT,
-	balance FLOAT
+const createUsersSkinsTable string = `
+	CREATE TABLE IF NOT EXISTS users_skins (
+	id INTEGER NOT NULL PRIMARY KEY,
+	fl FLOAT,
+	user_id INTEGER NOT NULL,
+	skin_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES users(id),
+	FOREIGN KEY(skin_id) REFERENCES skins(id)
 	);
 `
 
-// MARKET
+const createUsersGroupsTable string = `
+	CREATE TABLE IF NOT EXISTS users_groups (
+	id INTEGER NOT NULL PRIMARY KEY,
+	user_id INTEGER NOT NULL,
+	group_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES users(id),
+	FOREIGN KEY(group_id) REFERENCES groups(id)
+	);
+`
+
+var tables = []string{createSkinTable, createGroupTable, createUsersTable, createGroupSkinTable, createUsersSkinsTable, createUsersGroupsTable}
+
 type Market struct {
 	mu sync.RWMutex
 	Db *sql.DB
 }
 
-func NewMarket() (*Market, error) {
+func NewMarketConn() (*Market, error) {
 	Db, err := sql.Open("sqlite3", file)
 	if err != nil {
 		return nil, err
 	}
+
 	//Db.Exec("DROP TABLE skins;")
 	//Db.Exec("DROP TABLE groups;")
 	//Db.Exec("DROP TABLE group_skins;")
-	if _, err = Db.Exec(createSkinTable); err != nil {
-		return nil, err
-	}
 
-	if _, err = Db.Exec(createGroupTable); err != nil {
-		return nil, err
-	}
-
-	if _, err = Db.Exec(createGroupSkinTable); err != nil {
-		return nil, err
+	for _, t := range tables {
+		if _, err = Db.Exec(t); err != nil {
+			return nil, err
+		}
 	}
 
 	return &Market{
@@ -120,11 +136,46 @@ func (m *Market) GetSkin(sid string) (model.Skin, error) {
 	if err != nil {
 		return skin, err
 	}
-	defer rows.Close()
+	rows.Close()
 
 	err = rows.Scan(&skin.Name, &skin.Wear, &skin.Price, &skin.Gun, &skin.Min, &skin.Max)
 
 	return skin, err
+}
+
+func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	q := `
+		SELECT u.id AS user_id, us.fl, s.name, s.wear, s.price, s.gun
+			FROM users u
+		JOIN users_skins us ON (u.id=us.user_id)
+		JOIN skins s ON (us.skin_id=s.id)
+			WHERE u.id=?;
+	`
+
+	var skins []model.Skin
+
+	rows, err := m.Db.Query(q, uid)
+	if err != nil {
+		return skins, err
+	}
+
+	for rows.Next() {
+		var uid string
+		sTemp := model.Skin{}
+
+		err := rows.Scan(&uid, &sTemp.Fl, &sTemp.Name, &sTemp.Wear, &sTemp.Price, &sTemp.Gun)
+		if err != nil {
+			return skins, err
+		}
+
+		skins = append(skins, sTemp)
+	}
+	rows.Close()
+
+	return skins, nil
 }
 
 func (m *Market) AddGroup(group model.Group) error {
@@ -146,8 +197,8 @@ func (m *Market) GetActiveGroups() ([]model.DisplayGroup, error) {
 		return groups, err
 	}
 
-	emptyGroups, err := getEmptyGroups(m)
-	groups = append(groups, emptyGroups...)
+	//emptyGroups, err := getEmptyGroups(m)
+	//groups = append(groups, emptyGroups...)
 
 	return groups, err
 }
@@ -200,7 +251,7 @@ func (m *Market) GetChangedGroup(gid string) (model.DisplayGroup, error) {
 		}
 		group.Skins = append(group.Skins, sTemp)
 	}
-	defer rows.Close()
+	rows.Close()
 
 	group.GroupId = gID
 	group.Tier = gTier
@@ -215,9 +266,9 @@ func getFilledGroups(m *Market) ([]model.DisplayGroup, error) {
 	q := `
 	SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun, s.min, s.max
 		FROM groups g
-	  JOIN group_skins gs ON (g.id=gs.group_id)
-	  JOIN skins s ON (gs.skin_id=s.id)
-	  ORDER BY g.id, s.id;
+	JOIN group_skins gs ON (g.id=gs.group_id)
+	JOIN skins s ON (gs.skin_id=s.id)
+		ORDER BY g.id, s.id;
 	`
 	rows, err := m.Db.Query(q)
 	if err != nil {

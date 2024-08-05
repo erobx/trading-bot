@@ -12,6 +12,7 @@ type Skin struct {
 	Wear  string          `json:"Wear"`
 	Price types.DbDecimal `json:"Price"`
 	Gun   string          `json:"Gun"`
+	Fl    types.DbDecimal `json:"Fl"`
 	Min   types.DbDecimal `json:"Min"`
 	Max   types.DbDecimal `json:"Max"`
 }

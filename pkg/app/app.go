@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/erobx/trading-bot/pkg/app/handler"
-	"github.com/erobx/trading-bot/pkg/app/model"
 	"github.com/erobx/trading-bot/pkg/db"
 )
 
@@ -33,18 +32,18 @@ func disableCacheInDevMode(next http.Handler) http.Handler {
 }
 
 func (s *App) Start() {
-	m, err := db.NewMarket()
+	m, err := db.NewMarketConn()
 	if err != nil {
 		panic(err)
 	}
 
-	//addData(m)
-
 	h := handler.NewDefaultHandler(m)
+	gh := handler.NewGroupsHandler(m, time.Now)
 	mh := handler.NewModalHandler(m)
 
 	s.Mux.Handle("/public/", disableCacheInDevMode(http.StripPrefix("/public", http.FileServer(http.Dir("public")))))
 	s.Mux.Handle("/", h)
+	s.Mux.Handle("/groups", gh)
 	s.Mux.Handle("/modal", mh)
 
 	server := &http.Server{
@@ -55,13 +54,4 @@ func (s *App) Start() {
 	}
 	fmt.Printf("Listening on %s...\n", server.Addr)
 	server.ListenAndServe()
-}
-
-func addData(m *db.Market) {
-	for i := 0; i < 5; i++ {
-		s := model.BuildSkin()
-		m.AddSkin(s)
-	}
-	g := model.NewGroup("pink")
-	m.AddGroup(g)
 }

@@ -1,7 +1,7 @@
-run-online: build-online
+run: build
 	@./bin/trade
 
-build-online:
+build:
 	@go build -o bin/trade ./cmd
 
 templ:
