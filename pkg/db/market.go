@@ -2,33 +2,31 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"math/rand/v2"
 	"sync"
 
 	"github.com/erobx/trading-bot/pkg/app/model"
 	"github.com/erobx/trading-bot/pkg/types"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/shopspring/decimal"
 )
 
 const file string = "market.sqlite"
 
-const createSkinTable string = `
+const createSkinsTable string = `
 	CREATE TABLE IF NOT EXISTS skins (
 	id INTEGER NOT NULL PRIMARY KEY,
 	name TEXT,
+	weapon TEXT,
 	wear TEXT,
-	price FLOAT,
-	gun TEXT,
-	min FLOAT,
-	max FLOAT
+	color TEXT,
+	collection TEXT,
+	float_min FLOAT,
+	float_max FLOAT
 	);
 `
 
-const createGroupTable string = `
-	CREATE TABLE IF NOT EXISTS groups (
+const createTradeupsTable string = `
+	CREATE TABLE IF NOT EXISTS tradeups (
 	id INTEGER NOT NULL PRIMARY KEY,
 	tier INTEGER,
 	active INTEGER
@@ -43,62 +41,57 @@ const createUsersTable string = `
 	);
 `
 
-const createGroupSkinTable string = `
-	CREATE TABLE IF NOT EXISTS group_skins (
+const createTradeupSkinsTable string = `
+	CREATE TABLE IF NOT EXISTS tradeup_skins (
 	id INTEGER NOT NULL PRIMARY KEY,
-	group_id INTEGER NOT NULL,
-	skin_id INTEGER NOT NULL,
-	FOREIGN KEY(group_id) REFERENCES groups(id),
-	FOREIGN KEY(skin_id) REFERENCES skins(id)
+	status TEXT,
+	tradeup_id INTEGER NOT NULL,
+	user_inv_id INTEGER NOT NULL,
+
+	FOREIGN KEY(tradeup_id) REFERENCES tradeups(id),
+	FOREIGN KEY(user_inv_id) REFERENCES user_inventory(id),
+	UNIQUE(tradeup_id, user_inv_id)
 	);
 `
 
-const createUsersSkinsTable string = `
-	CREATE TABLE IF NOT EXISTS users_skins (
+const createUserInventoryTable string = `
+	CREATE TABLE IF NOT EXISTS user_inventory (
 	id INTEGER NOT NULL PRIMARY KEY,
 	fl FLOAT,
+	price FLOAT,
 	user_id INTEGER NOT NULL,
 	skin_id INTEGER NOT NULL,
+
 	FOREIGN KEY(user_id) REFERENCES users(id),
 	FOREIGN KEY(skin_id) REFERENCES skins(id)
 	);
 `
 
-const createUsersGroupsTable string = `
-	CREATE TABLE IF NOT EXISTS users_groups (
-	id INTEGER NOT NULL PRIMARY KEY,
-	user_id INTEGER NOT NULL,
-	group_id INTEGER NOT NULL,
-	FOREIGN KEY(user_id) REFERENCES users(id),
-	FOREIGN KEY(group_id) REFERENCES groups(id)
-	);
-`
-
-var tables = []string{createSkinTable, createGroupTable, createUsersTable, createGroupSkinTable, createUsersSkinsTable, createUsersGroupsTable}
+var tables = []string{createSkinsTable, createTradeupsTable, createUsersTable, createTradeupSkinsTable, createUserInventoryTable}
 
 type Market struct {
 	mu sync.RWMutex
 	Db *sql.DB
 }
 
+func createTables(db *sql.DB) {
+	for _, t := range tables {
+		if _, err := db.Exec(t); err != nil {
+			panic(err)
+		}
+	}
+}
+
 func NewMarketConn() (*Market, error) {
-	Db, err := sql.Open("sqlite3", file)
+	db, err := sql.Open("sqlite3", file)
 	if err != nil {
 		return nil, err
 	}
 
-	//Db.Exec("DROP TABLE skins;")
-	//Db.Exec("DROP TABLE groups;")
-	//Db.Exec("DROP TABLE group_skins;")
-
-	for _, t := range tables {
-		if _, err = Db.Exec(t); err != nil {
-			return nil, err
-		}
-	}
+	createTables(db)
 
 	return &Market{
-		Db: Db,
+		Db: db,
 	}, nil
 }
 
@@ -106,41 +99,24 @@ func (m *Market) AddSkin(skin model.Skin) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	q := "INSERT INTO SKINS (id, name, wear, price, gun, min, max) VALUES(NULL,?,?,?,?,?,?);"
-	_, err := m.Db.Exec(q, skin.Name, skin.Wear, skin.Price, skin.Gun, skin.Min, skin.Max)
+	q := "INSERT INTO skins (id, name, weapon, wear, color, collection, float_min, float_max) VALUES(NULL,?,?,?,?,?,?,?);"
+	_, err := m.Db.Exec(q, skin.Name, skin.Weapon, skin.Wear, skin.Color, skin.Collection, skin.FloatMin, skin.FloatMax)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Market) AddSkinToGroup(gid string, sid string) error {
+func (m *Market) AddSkinToTradeup(tid string, sid string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	q := "INSERT INTO GROUP_SKINS (id, group_id, skin_id) VALUES(NULL,?,?);"
-	_, err := m.Db.Exec(q, gid, sid)
+	q := "INSERT INTO tradeup_skins (id, tradeup_id, user_skin_id) VALUES(NULL,?,?);"
+	_, err := m.Db.Exec(q, tid, sid)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (m *Market) GetSkin(sid string) (model.Skin, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	skin := model.Skin{}
-	q := "SELECT name,wear,price,gun,min,max FROM skins WHERE id=?"
-	rows, err := m.Db.Query(q, sid)
-	if err != nil {
-		return skin, err
-	}
-	rows.Close()
-
-	err = rows.Scan(&skin.Name, &skin.Wear, &skin.Price, &skin.Gun, &skin.Min, &skin.Max)
-
-	return skin, err
 }
 
 func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
@@ -148,10 +124,10 @@ func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
 	defer m.mu.RUnlock()
 
 	q := `
-		SELECT u.id AS user_id, us.fl, s.name, s.wear, s.price, s.gun
+		SELECT u.id AS user_id, ui.fl, s.name, s.wear
 			FROM users u
-		JOIN users_skins us ON (u.id=us.user_id)
-		JOIN skins s ON (us.skin_id=s.id)
+		JOIN user_inventory ui ON (u.id=ui.user_id)
+		JOIN skins s ON (ui.skin_id=s.id)
 			WHERE u.id=?;
 	`
 
@@ -166,7 +142,7 @@ func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
 		var uid string
 		sTemp := model.Skin{}
 
-		err := rows.Scan(&uid, &sTemp.Fl, &sTemp.Name, &sTemp.Wear, &sTemp.Price, &sTemp.Gun)
+		err := rows.Scan(&uid, &sTemp.Fl, &sTemp.Name, &sTemp.Wear)
 		if err != nil {
 			return skins, err
 		}
@@ -178,11 +154,11 @@ func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
 	return skins, nil
 }
 
-func (m *Market) AddGroup(group model.Group) error {
+func (m *Market) AddTradeup(group model.Tradeup) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	q := "INSERT INTO GROUPS (id, tier, active) VALUES(NULL,?,?);"
+	q := "INSERT INTO tradeups (id, tier, active) VALUES(NULL,?,?);"
 	_, err := m.Db.Exec(q, group.Tier, group.Active)
 	if err != nil {
 		return err
@@ -190,208 +166,123 @@ func (m *Market) AddGroup(group model.Group) error {
 	return nil
 }
 
-func (m *Market) GetActiveGroups() ([]model.DisplayGroup, error) {
-	groups, err := getFilledGroups(m)
-	if err != nil {
-		fmt.Println(err)
-		return groups, err
-	}
-
-	//emptyGroups, err := getEmptyGroups(m)
-	//groups = append(groups, emptyGroups...)
-
-	return groups, err
-}
-
-func (m *Market) GetChangedGroup(gid string) (model.DisplayGroup, error) {
+func (m *Market) GetActiveTradeups() ([]model.DisplayTrade, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	q := `
-		SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun, s.min, s.max
-			FROM groups g
-		JOIN group_skins gs ON (g.id=gs.group_id)
-		JOIN skins s ON (gs.skin_id=s.id)
-			WHERE g.id=?;
+	SELECT t.id AS tradeup_id, t.tier, s.name, s.weapon, s.wear, s.color, s.collection, s.float_min, s.float_max
+		FROM tradeups t
+	JOIN tradeup_skins ts ON (t.id=ts.tradeup_id)
+	JOIN skins s ON (ts.user_inv_id=s.id)
+		ORDER BY t.id, s.id;
 	`
-	rows, err := m.Db.Query(q, gid)
+	rows, err := m.Db.Query(q)
 	if err != nil {
-		return model.DisplayGroup{}, err
+		return []model.DisplayTrade{}, err
 	}
 	defer rows.Close()
 
-	var group model.DisplayGroup
-	var gID int
-	var gTier string
+	var tradeups []model.DisplayTrade
+	var currentTradeup *model.DisplayTrade
 
-	group = model.DisplayGroup{
+	for rows.Next() {
+		var tid int
+		var tier string
+		var name string
+		var weapon string
+		var wear string
+		var color string
+		var collection string
+		var floatMin types.DbDecimal
+		var floatMax types.DbDecimal
+
+		err := rows.Scan(&tid, &tier, &name, &weapon, &wear, &color, &collection, &floatMin, &floatMax)
+		if err != nil {
+			return tradeups, err
+		}
+
+		if currentTradeup == nil || currentTradeup.TradeId != tid {
+			if currentTradeup != nil {
+				tradeups = append(tradeups, *currentTradeup)
+			}
+			currentTradeup = &model.DisplayTrade{
+				TradeId: tid,
+				Tier:    tier,
+				Skins:   []model.Skin{},
+			}
+		}
+
+		sTemp := model.Skin{
+			Name:     name,
+			Wear:     wear,
+			FloatMin: floatMin,
+			FloatMax: floatMax,
+		}
+		currentTradeup.Skins = append(currentTradeup.Skins, sTemp)
+	}
+	rows.Close()
+
+	if currentTradeup != nil {
+		tradeups = append(tradeups, *currentTradeup)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return tradeups, nil
+}
+
+func (m *Market) GetChangedTradeup(tid string) (model.DisplayTrade, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	q := `
+		SELECT t.id AS tradeup_id, t.tier, s.name, s.weapon, s.wear, s.color, s.collection, s.float_min, s.float_max
+			FROM tradeups t
+		JOIN tradeup_skins ts ON (t.id=ts.tradeup_id)
+		JOIN skins s ON (ts.user_inv_id=s.id)
+			WHERE t.id=?;
+	`
+	rows, err := m.Db.Query(q, tid)
+	if err != nil {
+		return model.DisplayTrade{}, err
+	}
+	defer rows.Close()
+
+	var tradeup model.DisplayTrade
+	var id int
+	var tier string
+
+	tradeup = model.DisplayTrade{
 		Skins: []model.Skin{},
 	}
 
 	for rows.Next() {
 		var sName string
+		var sWeapon string
 		var sWear string
-		var sPrice types.DbDecimal
-		var sGun string
 		var sMin types.DbDecimal
 		var sMax types.DbDecimal
 
-		err := rows.Scan(&gID, &gTier, &sName, &sWear, &sPrice, &sGun, &sMin, &sMax)
+		err := rows.Scan(&id, &tier, &sName, &sWeapon, &sWear, &sMin, &sMax)
 		if err != nil {
-			return group, err
+			return tradeup, err
 		}
 
 		sTemp := model.Skin{
-			Name:  sName,
-			Wear:  sWear,
-			Price: sPrice,
-			Gun:   sGun,
-			Min:   sMin,
-			Max:   sMax,
+			Name:     sName,
+			Wear:     sWear,
+			FloatMin: sMin,
+			FloatMax: sMax,
 		}
-		group.Skins = append(group.Skins, sTemp)
+		tradeup.Skins = append(tradeup.Skins, sTemp)
 	}
 	rows.Close()
 
-	group.GroupId = gID
-	group.Tier = gTier
+	tradeup.TradeId = id
+	tradeup.Tier = tier
 
-	return group, nil
-}
-
-func getFilledGroups(m *Market) ([]model.DisplayGroup, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	q := `
-	SELECT g.id AS group_id, g.tier, s.name, s.wear, s.price, s.gun, s.min, s.max
-		FROM groups g
-	JOIN group_skins gs ON (g.id=gs.group_id)
-	JOIN skins s ON (gs.skin_id=s.id)
-		ORDER BY g.id, s.id;
-	`
-	rows, err := m.Db.Query(q)
-	if err != nil {
-		return []model.DisplayGroup{}, err
-	}
-	defer rows.Close()
-
-	var groups []model.DisplayGroup
-	var currentGroup *model.DisplayGroup
-
-	for rows.Next() {
-		var gID int
-		var gTier string
-		var sName string
-		var sWear string
-		var sPrice types.DbDecimal
-		var sGun string
-		var sMin types.DbDecimal
-		var sMax types.DbDecimal
-
-		err := rows.Scan(&gID, &gTier, &sName, &sWear, &sPrice, &sGun, &sMin, &sMax)
-		if err != nil {
-			return groups, err
-		}
-
-		if currentGroup == nil || currentGroup.GroupId != gID {
-			if currentGroup != nil {
-				groups = append(groups, *currentGroup)
-			}
-			currentGroup = &model.DisplayGroup{
-				GroupId: gID,
-				Tier:    gTier,
-				Skins:   []model.Skin{},
-			}
-		}
-
-		sTemp := model.Skin{
-			Name:  sName,
-			Wear:  sWear,
-			Price: sPrice,
-			Gun:   sGun,
-			Min:   sMin,
-			Max:   sMax,
-		}
-		currentGroup.Skins = append(currentGroup.Skins, sTemp)
-	}
-	rows.Close()
-
-	if currentGroup != nil {
-		groups = append(groups, *currentGroup)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return groups, nil
-}
-
-func getEmptyGroups(m *Market) ([]model.DisplayGroup, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	q := `
-	SELECT g.id AS group_id, g.tier
-		FROM groups g
-		WHERE g.active=1 AND
-		NOT EXISTS (SELECT group_id FROM group_skins
-			WHERE g.id=group_id)
-	ORDER BY g.id LIMIT(1);
-	`
-	rows, err := m.Db.Query(q)
-	if err != nil {
-		return []model.DisplayGroup{}, err
-	}
-	defer rows.Close()
-
-	var groups []model.DisplayGroup
-	var currentGroup *model.DisplayGroup
-
-	for rows.Next() {
-		var gID int
-		var gTier string
-
-		err := rows.Scan(&gID, &gTier)
-		if err != nil {
-			return groups, err
-		}
-
-		if currentGroup == nil || currentGroup.GroupId != gID {
-			if currentGroup != nil {
-				groups = append(groups, *currentGroup)
-			}
-			currentGroup = &model.DisplayGroup{
-				GroupId: gID,
-				Tier:    gTier,
-				Skins:   []model.Skin{},
-			}
-		}
-	}
-	rows.Close()
-
-	if currentGroup != nil {
-		groups = append(groups, *currentGroup)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return groups, nil
-}
-
-func RandomPrices() []types.DbDecimal {
-	min_d := float64(23.12)
-	max_d := float64(42.99)
-	size := 10
-	prices := make([]types.DbDecimal, size)
-
-	for i := range prices {
-		d := min_d + rand.Float64()*max_d
-		prices[i] = types.DbDecimal(decimal.NewFromFloat(d))
-	}
-
-	return prices
+	return tradeup, nil
 }

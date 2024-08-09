@@ -30,33 +30,33 @@ func (h *ModalHandler) Post(w http.ResponseWriter, r *http.Request) {
 	// add skin to approriate group
 	r.ParseForm()
 
-	groupId := r.FormValue("gid")
+	tradeupId := r.FormValue("tid")
 	skinId := r.FormValue("sid")
 
-	err := h.market.AddSkinToGroup(groupId, skinId)
+	err := h.market.AddSkinToTradeup(tradeupId, skinId)
 	if err != nil {
 		panic(err)
 	}
 
 	// get group that changed
-	g, err := h.market.GetChangedGroup(groupId)
+	t, err := h.market.GetChangedTradeup(tradeupId)
 	if err != nil {
 		panic(err)
 	}
 
-	h.View(w, r, GroupProps{
-		ID:    strconv.Itoa(g.GroupId),
-		Tier:  g.Tier,
-		Skins: g.Skins,
+	h.View(w, r, TradeupProps{
+		ID:    strconv.Itoa(t.TradeId),
+		Tier:  t.Tier,
+		Skins: t.Skins,
 	})
 }
 
-type GroupProps struct {
+type TradeupProps struct {
 	ID    string
 	Tier  string
 	Skins []model.Skin
 }
 
-func (h *ModalHandler) View(w http.ResponseWriter, r *http.Request, props GroupProps) {
-	view.Group(props.ID, props.Tier, props.Skins).Render(r.Context(), w)
+func (h *ModalHandler) View(w http.ResponseWriter, r *http.Request, props TradeupProps) {
+	view.Tradeup(props.ID, props.Tier, props.Skins).Render(r.Context(), w)
 }

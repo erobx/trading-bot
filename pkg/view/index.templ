@@ -23,7 +23,7 @@ templ page(isLoggedIn bool) {
 				<a class="btn btn-ghost text-xl" href="/">TradeUps</a>
 			</div>
 			<div class="navbar-start">
-				<a class="btn btn-ghost text-lg" href="/groups">Groups</a>
+				<a class="btn btn-ghost text-lg" href="/groups">Active Trades</a>
 			</div>
 			if !isLoggedIn {
 				<div class="navbar-end">
@@ -44,31 +44,23 @@ templ login(isLoggedIn bool) {
 
 templ Index(isLoggedIn bool, inv []model.Skin) {
 	@page(isLoggedIn) {
-		for _, s := range inv {
-			<div>
-				<p>{ s.Gun }</p>
-				<p>{ s.Name }</p>
-				<p>{ s.Wear }</p>
-				<p>{ s.Fl.String() }</p>
-				<p>{ s.Price.String() }</p>
-			</div>
-		}
+		<div>Welcome!</div>
 	}
 }
 
-templ Groups(groups []model.DisplayGroup, t time.Time, isLoggedIn bool) {
+templ Tradeups(tradeups []model.DisplayTrade, t time.Time, isLoggedIn bool) {
 	@page(isLoggedIn) {
 		<div>Active Pools</div>
 		<div id="main" class="flex flex-wrap justify-center">
-			for _, g := range groups {
-				@Group(strconv.Itoa(g.GroupId), g.Tier, g.Skins)
+			for _, t := range tradeups {
+				@Tradeup(strconv.Itoa(t.TradeId), t.Tier, t.Skins)
 			}
 		</div>
 	}
 }
 
-templ Group(gid, tier string, currentSkins []model.Skin) {
-	<div id={ string("group" + gid) } class="card items-center text-center p-4">
+templ Tradeup(tid, tier string, currentSkins []model.Skin) {
+	<div id={ string("group" + tid) } class="card items-center text-center p-4">
 		<div class="card-title mb-2">
 			<h1 class="text-lg">
 				{ cases.Title(language.English, cases.Compact).String(tier) }
@@ -80,29 +72,28 @@ templ Group(gid, tier string, currentSkins []model.Skin) {
 					<div class="">
 						<p>{ s.Name }</p>
 						<p>{ s.Wear }</p>
-						<p>{ s.Gun }</p>
-						<p>${ s.Price.String() }</p>
+						<p>{ s.Weapon }</p>
 					</div>
 				}
 				if len(currentSkins) != 10 {
 					for i := 0; i < 10-len(currentSkins); i++ {
-						@addSkin(gid)
+						@addSkin(tid)
 					}
 				}
 			} else {
 				for i := 0; i < 10; i++ {
-					@addSkin(gid)
+					@addSkin(tid)
 				}
 			}
 		</div>
 	</div>
 }
 
-templ addSkin(gid string) {
-	<button class="btn" onclick={ templ.ComponentScript{Call: "skinList" + gid + ".showModal()"} }>Add Skin</button>
-	<dialog id={ string("skinList" + gid) } class="modal">
+templ addSkin(tid string) {
+	<button class="btn" onclick={ templ.ComponentScript{Call: "skinList" + tid + ".showModal()"} }>Add Skin</button>
+	<dialog id={ string("skinList" + tid) } class="modal">
 		<div class="modal-box">
-			@skinForm(gid)
+			@skinForm(tid)
 		</div>
 		<form method="dialog" class="modal-backdrop">
 			<button>Close</button>
@@ -110,11 +101,11 @@ templ addSkin(gid string) {
 	</dialog>
 }
 
-templ skinForm(gid string) {
+templ skinForm(tid string) {
 	<div class="flex-col max-w-md space-y-2">
 		<h3>Select a skin</h3>
-		<form id="newSkinForm" method="POST" hx-post="/modal" hx-target={ string("#group" + gid) } hx-swap="outerHTML">
-			<input type="hidden" id="gid" name="gid" value={ gid }/>
+		<form id="newSkinForm" method="POST" hx-post="/modal" hx-target={ string("#group" + tid) } hx-swap="outerHTML">
+			<input type="hidden" id="gid" name="gid" value={ tid }/>
 			<input type="hidden" id="sid" name="sid" value="1"/>
 			@searchSkin()
 			<button class="btn" type="submit">Confirm</button>

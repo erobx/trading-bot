@@ -38,13 +38,16 @@ func (s *App) Start() {
 	}
 
 	h := handler.NewDefaultHandler(m)
-	gh := handler.NewGroupsHandler(m, time.Now)
+	gh := handler.NewTradeupsHandler(m, time.Now)
 	mh := handler.NewModalHandler(m)
+	lh := handler.NewLoginHandler()
 
 	s.Mux.Handle("/public/", disableCacheInDevMode(http.StripPrefix("/public", http.FileServer(http.Dir("public")))))
+
 	s.Mux.Handle("/", h)
 	s.Mux.Handle("/groups", gh)
 	s.Mux.Handle("/modal", mh)
+	s.Mux.Handle("/login", lh)
 
 	server := &http.Server{
 		Addr:         "localhost:3000",
