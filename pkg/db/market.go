@@ -37,6 +37,7 @@ const createUsersTable string = `
 	CREATE TABLE IF NOT EXISTS users (
 	id INTEGER NOT NULL PRIMARY KEY,
 	username TEXT,
+	email TEXT,
 	hash TEXT
 	);
 `
@@ -71,7 +72,7 @@ var tables = []string{createSkinsTable, createTradeupsTable, createUsersTable, c
 
 type Market struct {
 	mu sync.RWMutex
-	Db *sql.DB
+	db *sql.DB
 }
 
 func createTables(db *sql.DB) {
@@ -91,8 +92,20 @@ func NewMarketConn() (*Market, error) {
 	createTables(db)
 
 	return &Market{
-		Db: db,
+		db: db,
 	}, nil
+}
+
+func (m *Market) AddUser(username, email, hash string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	q := "INSERT INTO users (id,username,email,hash) VALUES(NULL,?,?,?)"
+	_, err := m.db.Exec(q, username, email, hash)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *Market) AddSkin(skin model.Skin) error {
@@ -100,7 +113,7 @@ func (m *Market) AddSkin(skin model.Skin) error {
 	defer m.mu.Unlock()
 
 	q := "INSERT INTO skins (id, name, weapon, wear, color, collection, float_min, float_max) VALUES(NULL,?,?,?,?,?,?,?);"
-	_, err := m.Db.Exec(q, skin.Name, skin.Weapon, skin.Wear, skin.Color, skin.Collection, skin.FloatMin, skin.FloatMax)
+	_, err := m.db.Exec(q, skin.Name, skin.Weapon, skin.Wear, skin.Color, skin.Collection, skin.FloatMin, skin.FloatMax)
 	if err != nil {
 		return err
 	}
@@ -112,7 +125,7 @@ func (m *Market) AddSkinToTradeup(tid string, sid string) error {
 	defer m.mu.Unlock()
 
 	q := "INSERT INTO tradeup_skins (id, tradeup_id, user_skin_id) VALUES(NULL,?,?);"
-	_, err := m.Db.Exec(q, tid, sid)
+	_, err := m.db.Exec(q, tid, sid)
 	if err != nil {
 		return err
 	}
@@ -133,7 +146,7 @@ func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
 
 	var skins []model.Skin
 
-	rows, err := m.Db.Query(q, uid)
+	rows, err := m.db.Query(q, uid)
 	if err != nil {
 		return skins, err
 	}
@@ -159,7 +172,7 @@ func (m *Market) AddTradeup(group model.Tradeup) error {
 	defer m.mu.Unlock()
 
 	q := "INSERT INTO tradeups (id, tier, active) VALUES(NULL,?,?);"
-	_, err := m.Db.Exec(q, group.Tier, group.Active)
+	_, err := m.db.Exec(q, group.Tier, group.Active)
 	if err != nil {
 		return err
 	}
@@ -177,7 +190,7 @@ func (m *Market) GetActiveTradeups() ([]model.DisplayTrade, error) {
 	JOIN skins s ON (ts.user_inv_id=s.id)
 		ORDER BY t.id, s.id;
 	`
-	rows, err := m.Db.Query(q)
+	rows, err := m.db.Query(q)
 	if err != nil {
 		return []model.DisplayTrade{}, err
 	}
@@ -245,7 +258,7 @@ func (m *Market) GetChangedTradeup(tid string) (model.DisplayTrade, error) {
 		JOIN skins s ON (ts.user_inv_id=s.id)
 			WHERE t.id=?;
 	`
-	rows, err := m.Db.Query(q, tid)
+	rows, err := m.db.Query(q, tid)
 	if err != nil {
 		return model.DisplayTrade{}, err
 	}

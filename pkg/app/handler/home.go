@@ -33,7 +33,6 @@ func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	// call to db for auth or middleware
 	h.View(w, r, Settings{
 		isLoggedIn: false,
 		inv:        inv,
@@ -41,5 +40,5 @@ func (h *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DefaultHandler) View(w http.ResponseWriter, r *http.Request, c Settings) {
-	view.Index(c.isLoggedIn, c.inv).Render(r.Context(), w)
+	view.Index(c.inv).Render(r.Context(), w)
 }

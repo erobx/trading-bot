@@ -1,13 +1,15 @@
 package model
 
 type User struct {
-	Balance   float32
+	Username  string
+	Email     string
 	Inventory []Skin
 }
 
-func NewUser(b float32) *User {
+func NewUser(username, email, hash string, inv []Skin) *User {
 	return &User{
-		Balance: b,
+		Username:  username,
+		Email:     email,
+		Inventory: inv,
 	}
 }
-

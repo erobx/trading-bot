@@ -10,4 +10,9 @@ require (
 
 require github.com/shopspring/decimal v1.4.0
 
-require golang.org/x/text v0.16.0 // indirect
+require (
+	github.com/alexedwards/argon2id v1.0.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
+)
