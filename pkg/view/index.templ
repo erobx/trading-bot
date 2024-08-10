@@ -43,21 +43,23 @@ templ login() {
 
 templ Signup() {
 	@page() {
-		<form id="newUserForm" method="POST" hx-post="/signup">
-			<label class="input input-bordered flex items-center gap-2">
-				Username
-				<input id="username" name="username" type="text" class="grow" placeholder="username"/>
-			</label>
-			<label class="input input-bordered flex items-center gap-2">
-				Email
-				<input id="email" name="email" type="text" class="grow" placeholder="tradeups@gmail.com"/>
-			</label>
-			<label class="input input-bordered flex items-center gap-2">
-				Password
-				<input id="password" name="password" type="password" class="grow" placeholder="password"/>
-			</label>
-			<button class="btn" type="submit">Confirm</button>
-		</form>
+		<div class="flex items-center justify-center">
+			<form id="newUserForm" method="POST" hx-post="/signup" hx-location="/">
+				<label class="input input-bordered flex items-center gap-2">
+					Username
+					<input name="username" type="text"/>
+				</label>
+				<label class="input input-bordered flex items-center gap-2">
+					Password
+					<input name="password" type="password"/>
+				</label>
+				<label class="input input-bordered flex items-center gap-2">
+					Email
+					<input name="email" type="text"/>
+				</label>
+				<button class="btn" type="submit">Confirm</button>
+			</form>
+		</div>
 	}
 }
 
