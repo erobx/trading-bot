@@ -6,7 +6,7 @@ import (
 	"github.com/erobx/trading-bot/pkg/db"
 )
 
-func ValidateNewUser(m *db.Market, username, email, password string) bool {
+func ValidateNewUser(d *db.Db, username, email, password string) bool {
 	return validateUsername(username) && validateEmail(email) && validatePass(password)
 }
 

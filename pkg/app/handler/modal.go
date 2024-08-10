@@ -10,10 +10,10 @@ import (
 )
 
 type ModalHandler struct {
-	market *db.Market
+	market *db.Db
 }
 
-func NewModalHandler(m *db.Market) *ModalHandler {
+func NewModalHandler(m *db.Db) *ModalHandler {
 	return &ModalHandler{
 		market: m,
 	}

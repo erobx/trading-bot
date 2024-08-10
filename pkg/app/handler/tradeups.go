@@ -10,11 +10,11 @@ import (
 )
 
 type TradeupsHandler struct {
-	market *db.Market
+	market *db.Db
 	Now    func() time.Time
 }
 
-func NewTradeupsHandler(m *db.Market, now func() time.Time) *TradeupsHandler {
+func NewTradeupsHandler(m *db.Db, now func() time.Time) *TradeupsHandler {
 	return &TradeupsHandler{
 		market: m,
 		Now:    now,

@@ -10,7 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const file string = "market.sqlite"
+const file string = "tradeups.sqlite"
 
 const createSkinsTable string = `
 	CREATE TABLE IF NOT EXISTS skins (
@@ -83,7 +83,7 @@ func createTables(db *sql.DB) {
 	}
 }
 
-func NewDbConn() (*Db, error) {
+func NewConn() (*Db, error) {
 	db, err := sql.Open("sqlite3", file)
 	if err != nil {
 		return nil, err

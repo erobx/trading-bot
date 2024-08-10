@@ -14,10 +14,10 @@ type Settings struct {
 }
 
 type DefaultHandler struct {
-	market *db.Market
+	market *db.Db
 }
 
-func NewDefaultHandler(m *db.Market) *DefaultHandler {
+func NewDefaultHandler(m *db.Db) *DefaultHandler {
 	return &DefaultHandler{
 		market: m,
 	}

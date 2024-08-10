@@ -1,8 +1,6 @@
 package app
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,59 +34,23 @@ func disableCacheInDevMode(next http.Handler) http.Handler {
 	})
 }
 
-type Auth struct {
-	next     http.Handler
-	username string
-	password string
-}
-
-func NewAuth(n http.Handler, username, password string) http.Handler {
-	auth := Auth{
-		next:     n,
-		username: username,
-		password: password,
-	}
-	return auth
-}
-
-func (a Auth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	username, password, ok := r.BasicAuth()
-	if ok {
-		usernameHash := sha256.Sum256([]byte(username))
-		passwordHash := sha256.Sum256([]byte(password))
-		expectedUsername := sha256.Sum256([]byte(a.username))
-		expectedPasword := sha256.Sum256([]byte(a.password))
-
-		usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsername[:]) == 1)
-		passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasword[:]) == 1)
-
-		if usernameMatch && passwordMatch {
-			a.next.ServeHTTP(w, r)
-			return
-		}
-	}
-
-	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-}
-
 func (s *App) Start() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	m, err := db.NewMarketConn()
+	d, err := db.NewConn()
 	if err != nil {
 		panic(err)
 	}
 
-	h := handler.NewDefaultHandler(m)
-	th := handler.NewTradeupsHandler(m, time.Now)
-	mh := handler.NewModalHandler(m)
-	sh := handler.NewSignupHandler(m)
+	h := handler.NewDefaultHandler(d)
+	th := handler.NewTradeupsHandler(d, time.Now)
+	mh := handler.NewModalHandler(d)
+	sh := handler.NewSignupHandler(d)
 	lh := handler.NewLoginHandler()
-	ad := handler.NewAdminHandler(m)
+	ad := handler.NewAdminHandler(d)
 
 	username := os.Getenv("AUTH_USERNAME")
 	password := os.Getenv("AUTH_PASSWORD")

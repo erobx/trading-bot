@@ -13,10 +13,10 @@ import (
 )
 
 type SignupHandler struct {
-	market *db.Market
+	market *db.Db
 }
 
-func NewSignupHandler(m *db.Market) *SignupHandler {
+func NewSignupHandler(m *db.Db) *SignupHandler {
 	return &SignupHandler{
 		market: m,
 	}

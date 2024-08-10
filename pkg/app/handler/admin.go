@@ -7,10 +7,10 @@ import (
 )
 
 type AdminHandler struct {
-	market *db.Market
+	market *db.Db
 }
 
-func NewAdminHandler(m *db.Market) *AdminHandler {
+func NewAdminHandler(m *db.Db) *AdminHandler {
 	return &AdminHandler{
 		market: m,
 	}
