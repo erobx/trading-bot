@@ -36,15 +36,28 @@ templ page() {
 	</html>
 }
 
-templ login() {
+templ Login() {
 	@page() {
+		<div class="flex items-center justify-center">
+			<form id="loginForm" method="POST" hx-post="/login">
+				<label class="input input-bordered flex items-center gap-2">
+					Email
+					<input name="email" type="text"/>
+				</label>
+				<label class="input input-bordered flex items-center gap-2">
+					Password
+					<input name="password" type="password"/>
+				</label>
+				<button class="btn" type="submit">Login</button>
+			</form>
+		</div>
 	}
 }
 
 templ Signup() {
 	@page() {
 		<div class="flex items-center justify-center">
-			<form id="newUserForm" method="POST" hx-post="/signup" hx-location="/">
+			<form id="newUserForm" method="POST" hx-post="/signup">
 				<label class="input input-bordered flex items-center gap-2">
 					Username
 					<input name="username" type="text"/>
@@ -57,7 +70,7 @@ templ Signup() {
 					Email
 					<input name="email" type="text"/>
 				</label>
-				<button class="btn" type="submit">Confirm</button>
+				<button class="btn" type="submit">Register</button>
 			</form>
 		</div>
 	}

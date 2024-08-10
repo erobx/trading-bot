@@ -7,7 +7,11 @@ import (
 )
 
 func ValidateNewUser(m *db.Market, username, email, password string) bool {
-	return validateUsername(username) && validateEmail(m, email) && validatePass(password)
+	return validateUsername(username) && validateEmail(email) && validatePass(password)
+}
+
+func ValidateLogin(email, password string) bool {
+	return validateEmail(email) && validatePass(password)
 }
 
 func validateUsername(name string) bool {
@@ -17,8 +21,7 @@ func validateUsername(name string) bool {
 	return true
 }
 
-func validateEmail(m *db.Market, email string) bool {
-	//m.CheckEmail()
+func validateEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }

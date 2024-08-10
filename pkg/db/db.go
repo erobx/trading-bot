@@ -70,9 +70,9 @@ const createUserInventoryTable string = `
 
 var tables = []string{createSkinsTable, createTradeupsTable, createUsersTable, createTradeupSkinsTable, createUserInventoryTable}
 
-type Market struct {
-	mu sync.RWMutex
-	db *sql.DB
+type Db struct {
+	mu    sync.RWMutex
+	sqlDb *sql.DB
 }
 
 func createTables(db *sql.DB) {
@@ -83,7 +83,7 @@ func createTables(db *sql.DB) {
 	}
 }
 
-func NewMarketConn() (*Market, error) {
+func NewDbConn() (*Db, error) {
 	db, err := sql.Open("sqlite3", file)
 	if err != nil {
 		return nil, err
@@ -91,50 +91,50 @@ func NewMarketConn() (*Market, error) {
 
 	createTables(db)
 
-	return &Market{
-		db: db,
+	return &Db{
+		sqlDb: db,
 	}, nil
 }
 
-func (m *Market) AddUser(username, email, hash string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (d *Db) AddUser(username, email, hash string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	q := "INSERT INTO users (id,username,email,hash) VALUES(NULL,?,?,?)"
-	_, err := m.db.Exec(q, username, email, hash)
+	_, err := d.sqlDb.Exec(q, username, email, hash)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Market) AddSkin(skin model.Skin) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (d *Db) AddSkin(skin model.Skin) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	q := "INSERT INTO skins (id, name, weapon, wear, color, collection, float_min, float_max) VALUES(NULL,?,?,?,?,?,?,?);"
-	_, err := m.db.Exec(q, skin.Name, skin.Weapon, skin.Wear, skin.Color, skin.Collection, skin.FloatMin, skin.FloatMax)
+	_, err := d.sqlDb.Exec(q, skin.Name, skin.Weapon, skin.Wear, skin.Color, skin.Collection, skin.FloatMin, skin.FloatMax)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Market) AddSkinToTradeup(tid string, sid string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (d *Db) AddSkinToTradeup(tid string, sid string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	q := "INSERT INTO tradeup_skins (id, tradeup_id, user_skin_id) VALUES(NULL,?,?);"
-	_, err := m.db.Exec(q, tid, sid)
+	_, err := d.sqlDb.Exec(q, tid, sid)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (d *Db) GetInventory(uid string) ([]model.Skin, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 
 	q := `
 		SELECT u.id AS user_id, ui.fl, s.name, s.wear
@@ -146,7 +146,7 @@ func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
 
 	var skins []model.Skin
 
-	rows, err := m.db.Query(q, uid)
+	rows, err := d.sqlDb.Query(q, uid)
 	if err != nil {
 		return skins, err
 	}
@@ -167,21 +167,21 @@ func (m *Market) GetInventory(uid string) ([]model.Skin, error) {
 	return skins, nil
 }
 
-func (m *Market) AddTradeup(group model.Tradeup) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (d *Db) AddTradeup(group model.Tradeup) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	q := "INSERT INTO tradeups (id, tier, active) VALUES(NULL,?,?);"
-	_, err := m.db.Exec(q, group.Tier, group.Active)
+	_, err := d.sqlDb.Exec(q, group.Tier, group.Active)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Market) GetActiveTradeups() ([]model.DisplayTrade, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (d *Db) GetActiveTradeups() ([]model.DisplayTrade, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	q := `
 	SELECT t.id AS tradeup_id, t.tier, s.name, s.weapon, s.wear, s.color, s.collection, s.float_min, s.float_max
@@ -190,7 +190,7 @@ func (m *Market) GetActiveTradeups() ([]model.DisplayTrade, error) {
 	JOIN skins s ON (ts.user_inv_id=s.id)
 		ORDER BY t.id, s.id;
 	`
-	rows, err := m.db.Query(q)
+	rows, err := d.sqlDb.Query(q)
 	if err != nil {
 		return []model.DisplayTrade{}, err
 	}
@@ -247,9 +247,9 @@ func (m *Market) GetActiveTradeups() ([]model.DisplayTrade, error) {
 	return tradeups, nil
 }
 
-func (m *Market) GetChangedTradeup(tid string) (model.DisplayTrade, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (d *Db) GetChangedTradeup(tid string) (model.DisplayTrade, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	q := `
 		SELECT t.id AS tradeup_id, t.tier, s.name, s.weapon, s.wear, s.color, s.collection, s.float_min, s.float_max
@@ -258,7 +258,7 @@ func (m *Market) GetChangedTradeup(tid string) (model.DisplayTrade, error) {
 		JOIN skins s ON (ts.user_inv_id=s.id)
 			WHERE t.id=?;
 	`
-	rows, err := m.db.Query(q, tid)
+	rows, err := d.sqlDb.Query(q, tid)
 	if err != nil {
 		return model.DisplayTrade{}, err
 	}
